@@ -47,8 +47,31 @@ urlpatterns =[
     path('carts/<pk>/destroy',views.CartDestroyViewSet.as_view()),
     #manage cartitem
     path('carts/<cart_pk>/items/<pk>',views.ItemCartRetreiveViewSet.as_view()),
+    path('carts/<cart_pk>/items/<pk>/destroy',views.ItemCartDestroyViewSet.as_view()),
+    path('carts/<cart_pk>/items/<pk>/update',views.ItemCartUpdateViewSet.as_view()),
     path('carts/<cart_pk>/items/',views.ItemCartListViewSet.as_view()),
     path('carts/items/add',views.ItemCartCreateViewSet.as_view()),
+    #manage orders
+    path('orders/',views.OrderListViewSet.as_view()),
+    path('orders/add/',views.OrderCreateViewSet.as_view()),
+    path('orders/<int:pk>/',views.OrderRetreiveViewSet.as_view()),
+    path('orders/<int:pk>/destory/',views.OrderDestroyViewSet.as_view()),
+    path('orders/<int:pk>/update/',views.OrderUpdateViewSet.as_view()),
+    #manage slide
+    path('slide/',views.SlideListViewSet.as_view()),
+    path('slide/add/',views.SlideCreateViewSet.as_view()),
+    path('slide/<int:pk>/destory/',views.SlideDestroyViewSet.as_view()),
+    path('slide/<int:pk>/update/',views.SlideUpdateViewSet.as_view()),
+    #manage reviews
+    path('reviews/',views.ReviewListViewSet.as_view()),
+    path('reviews/add/',views.ReviewCreateViewSet.as_view()),
+    # path('reviews/<int:pk>/destory/',views.ReviewDestroyViewSet.as_view()),
+    # path('reviews/<int:pk>/update/',views.ReviewUpdateViewSet.as_view()),
+
+
+
+
+
 
 
 

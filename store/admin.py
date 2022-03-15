@@ -78,6 +78,25 @@ class StoreAdmin(admin.ModelAdmin):
 @admin.register(models.Cart)
 class CartAdmin(admin.ModelAdmin):
     list_display = ['id']
+#orders
+class OrderItemInline(admin.TabularInline):
+    autocomplete_fields = ['product']
+    min_num = 1
+    max_num = 10
+    model = models.OrderItem
+    extra = 0
+
+
+@admin.register(models.Order)
+class OrderAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['customer']
+    #inlines = [OrderItemInline]
+    list_display = ['id', 'placed_at', 'customer']
+
+@admin.register(models.OrderItem)
+class OrderItemAdmin(admin.ModelAdmin):
+    list_display = ['id','order','product','quantity','unit_price']
+
 
 @admin.register(models.CartItem)
 class CartItemAdmin(admin.ModelAdmin):
@@ -110,18 +129,9 @@ class CustomerAdmin(admin.ModelAdmin):
         return super().get_queryset(request).annotate(
             orders_count=Count('order')
         )
+# reviews
+@admin.register(models.Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ['product','name','description','date']
 
 
-class OrderItemInline(admin.TabularInline):
-    autocomplete_fields = ['product']
-    min_num = 1
-    max_num = 10
-    model = models.OrderItem
-    extra = 0
-
-
-@admin.register(models.Order)
-class OrderAdmin(admin.ModelAdmin):
-    autocomplete_fields = ['customer']
-    inlines = [OrderItemInline]
-    list_display = ['id', 'placed_at', 'customer']

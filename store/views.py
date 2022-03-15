@@ -27,7 +27,100 @@ from rest_framework.pagination import PageNumberPagination
 # this for cart 
 from rest_framework.mixins import CreateModelMixin
 from rest_framework.viewsets import GenericViewSet
+#Manage Client Reviews to the product
+class ReviewCreateViewSet(generics.CreateAPIView):
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = Review.objects.all()
+    def get_serializer_context(self):
+        return {'product_id':self.kwargs['product_pk']}
+class ReviewListViewSet(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+    queryset = Review.objects.all()
+
+#Manage Client Reviews to the stores
+
+#Manage slide
+class SlideCreateViewSet(generics.CreateAPIView):
+    serializer_class = SlideSerializer
+    permission_classes = [IsAdminUser]
+    queryset = Slide.objects.all()
+
+class SlideListViewSet(generics.ListAPIView):
+    serializer_class = SlideSerializer
+    permission_classes = [IsAdminUser]
+    queryset = Slide.objects.all()
+
+class SlideUpdateViewSet(generics.UpdateAPIView):
+    serializer_class = SlideSerializer
+    permission_classes = [IsAdminUser]
+    queryset = Slide.objects.all()
+
+class SlideDestroyViewSet(generics.DestroyAPIView):
+    serializer_class = SlideSerializer
+    permission_classes = [IsAdminUser]
+    queryset = Slide.objects.all()
+
+#Manage Orders
+class OrderCreateViewSet(generics.CreateAPIView):
+    serializer_class = CreateOrderSerializer
+    permission_classes = [IsAuthenticated]
+    def create(self, request, *args, **kwargs):
+        # we use the first serializer (CreateOrderSerializer) to do the first part of the job (voir serializer)
+        serializer = CreateOrderSerializer(
+            data=request.data,
+            context={'user_id':self.request.user.id}
+        )
+        serializer.is_valid(raise_exception=True)
+        # we caputre in here the result of the first serializer (voir serializer)
+        order = serializer.save()
+        # we use in here the second serializer pour afficher the order object created et non pas cart_id (qui existe fil CreateOrderSerializer)
+        serializer = OrderSerializer(order)
+        return Response(serializer.data)
+
+
+class OrderListViewSet(generics.ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user = self.request.user
+        # s'il s'agit d'un admin il va voir tous les orders
+        if user.is_staff:
+            return Order.objects.all()
+        #s'il est authentifié il va voir que ces ordres
+        customer_id = Customer.objects.only('id').get(user_id = user)
+        return Order.objects.filter(customer_id=customer_id)
+
+class OrderRetreiveViewSet(generics.RetrieveAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user = self.request.user
+        # s'il s'agit d'un admin il va voir tous les orders
+        if user.is_staff:
+            return Order.objects.all()
+        #s'il est authentifié il va voir que ces ordres
+        customer_id = Customer.objects.only('id').get(user_id = user)
+        return Order.objects.filter(customer_id=customer_id)
+class OrderDestroyViewSet(generics.DestroyAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = Order.objects.all()
+class OrderUpdateViewSet(generics.UpdateAPIView):
+    serializer_class = UpdateOrderSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = Order.objects.all()
 #Manage cartitem
+class ItemCartUpdateViewSet(generics.UpdateAPIView):
+    serializer_class = CartItemSerializer
+    def get_queryset(self):
+        return CartItem.objects.filter(cart_id=self.kwargs['cart_pk']).select_related('product')
+
+class ItemCartDestroyViewSet(generics.DestroyAPIView):
+    serializer_class = CartItemSerializer
+    def get_queryset(self):
+        return CartItem.objects.filter(cart_id=self.kwargs['cart_pk']).select_related('product')
+
 class ItemCartRetreiveViewSet(generics.RetrieveAPIView):
     serializer_class = CartItemSerializer
     def get_queryset(self):

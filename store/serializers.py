@@ -1,9 +1,8 @@
-from dataclasses import field, fields
-from pyexpat import model
+from django.db import transaction
 from rest_framework import serializers
 #pour convertir en decimal a number
 from decimal import Decimal
-from store.models import Cart, CartItem, Collection, Product ,Customer, ProductImage, Review
+from .models import Cart, CartItem, Collection, Order, OrderItem, Product ,Customer, ProductImage, Review, Slide
 #collectionSerializer
 class CollectionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -78,11 +77,73 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields =['id','items','total_price']
+#orderitemSerializer
+class OrderItemSerializer(serializers.ModelSerializer):
+    product = SimpleProductSerializer()
+    class Meta:
+        model = OrderItem
+        fields =['id','product','unit_price','quantity']
+#orderSerializer
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many = True,read_only=True)
+    class Meta:
+        model = Order
+        fields = ['id','customer','placed_at','payment_status','items']
+class CreateOrderSerializer(serializers.Serializer):
+    cart_id =serializers.UUIDField()
+    # to validate the data we receive (cart_id)
+    def validate_cart_id(self,cart_id):
+        # if the cart_id given is not found in DB
+        if not Cart.objects.filter(pk=cart_id).exists():
+            raise serializers.ValidationError('no cart with the given ID was found.')
+        # if the cart_id given is empty (no reason to create an empty order)
+        if CartItem.objects.filter(cart_id=cart_id).count()==0:
+            raise serializers.ValidationError('The cart is empty.')
+        return cart_id
+
+    def save(self, **kwargs):
+        with transaction.atomic():
+            #print (self.validated_data['cart_id'])
+            #print (self.context['user_id'])
+            # to get the current customer
+            (customer,created) = Customer.objects.get_or_create(user_id=self.context['user_id'])
+            # to create a new order for this customer
+            order = Order.objects.create(customer=customer)
+            # to get all the cart items of the cart_id 
+            cart_items = CartItem.objects.filter(cart_id=self.validated_data['cart_id'])
+            # we creating a list of order_items
+            order_items =[
+                OrderItem(
+                    order=order,
+                    product = item.product,
+                    unit_price=item.product.unit_price,
+                    quantity= item.quantity
+                )for item in cart_items
+            ]
+            # we are saving all of our orderItems all in once thanks to bluk
+            OrderItem.objects.bulk_create(order_items)
+            # delete the shopping cart
+            Cart.objects.filter(pk=self._validated_data['cart_id']).delete()
+            # we return an object (order) from this serializer
+            return order
+class UpdateOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ['payment_status']
+class SlideSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Slide
+        fields =['id','slide_image']
+
 
 
 #ReviewSerializer
 class ReviewSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        product_id = self.context['product_id']
+        return Review.objects.create(product_id=product_id, **validated_data)
     class Meta:
         model = Review
-        fields =['id','date','name','description','product']
+        fields =['id','date','name','description']
+
 
