@@ -6,9 +6,11 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
 from store.filters import ProductFilter
+from store.pagination import DefaultPagination
 from store.permissions import IsAminOrReadOnly
 from .models import *
 from .serializers import *
+from .pagination import *
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 # this is for using class-based views
@@ -29,17 +31,82 @@ from rest_framework.mixins import CreateModelMixin
 from rest_framework.viewsets import GenericViewSet
 #Manage Client Reviews to the product
 class ReviewCreateViewSet(generics.CreateAPIView):
-    serializer_class = ReviewSerializer
+    serializer_class = CreateReviewSerializer
     permission_classes = [IsAuthenticated]
-    queryset = Review.objects.all()
     def get_serializer_context(self):
-        return {'product_id':self.kwargs['product_pk']}
+        return {'product_id':self.kwargs['product_pk'],'name':self.request.user}
+    queryset = Review.objects.all()
+
 class ReviewListViewSet(generics.ListAPIView):
     serializer_class = ReviewSerializer
     queryset = Review.objects.all()
 
-#Manage Client Reviews to the stores
+class ReviewUpdateViewSet(generics.UpdateAPIView):
+    serializer_class = CreateReviewSerializer
+    permission_classes = [IsAuthenticated]
+    def get_serializer_context(self):
+        return {'product_id':self.kwargs['product_pk'],'name':self.request.user}
+    
+    def get_queryset(self):
+        user = self.request.user
+        # s'il s'agit d'un admin il va voir tous les orders
+        if user.is_staff:
+            return Review.objects.all()
+        #s'il est authentifié il va voir que ces ordres
+        return Review.objects.filter(name=user)
 
+class ReviewDestroyViewSet(generics.DestroyAPIView):
+    serializer_class = CreateReviewSerializer
+    permission_classes = [IsAuthenticated]
+    def get_serializer_context(self):
+        return {'product_id':self.kwargs['product_pk'],'name':self.request.user}
+    
+    def get_queryset(self):
+        user = self.request.user
+        # s'il s'agit d'un admin il va voir tous les orders
+        if user.is_staff:
+            return Review.objects.all()
+        #s'il est authentifié il va voir que ces ordres
+        return Review.objects.filter(name=user)
+#Manage Client Reviews to the stores
+class StoreCreateViewSet(generics.CreateAPIView):
+    serializer_class = CreateStoreReviewSerializer
+    permission_classes = [IsAuthenticated]
+    def get_serializer_context(self):
+        return {'store_id':self.kwargs['store_pk'],'name':self.request.user}
+    queryset = StoreReview.objects.all()
+
+class StoreListViewSet(generics.ListAPIView):
+    serializer_class = StoreReviewSerializer
+    queryset = StoreReview.objects.all()
+
+class StoreUpdateViewSet(generics.UpdateAPIView):
+    serializer_class = CreateStoreReviewSerializer
+    permission_classes = [IsAuthenticated]
+    def get_serializer_context(self):
+        return {'store_id':self.kwargs['store_pk'],'name':self.request.user}
+    
+    def get_queryset(self):
+        user = self.request.user
+        # s'il s'agit d'un admin il va voir tous les orders
+        if user.is_staff:
+            return StoreReview.objects.all()
+        #s'il est authentifié il va voir que ces ordres
+        return StoreReview.objects.filter(name=user)
+
+class StoreDestroyViewSet(generics.DestroyAPIView):
+    serializer_class = CreateStoreReviewSerializer
+    permission_classes = [IsAuthenticated]
+    def get_serializer_context(self):
+        return {'store_id':self.kwargs['store_pk'],'name':self.request.user}
+    
+    def get_queryset(self):
+        user = self.request.user
+        # s'il s'agit d'un admin il va voir tous les orders
+        if user.is_staff:
+            return StoreReview.objects.all()
+        #s'il est authentifié il va voir que ces ordres
+        return StoreReview.objects.filter(name=user)
 #Manage slide
 class SlideCreateViewSet(generics.CreateAPIView):
     serializer_class = SlideSerializer
@@ -204,11 +271,8 @@ class ProductCreate(generics.CreateAPIView):
 class ProductList(generics.ListAPIView):
     queryset=Product.objects.prefetch_related('images').all()
     serializer_class =ProductSerializer
-    filter_backends  =[DjangoFilterBackend,SearchFilter,OrderingFilter]
-    filterset_class = ProductFilter
-    search_fields = ['title','description']
-    ordering_fields =['unit_price','last_update']
-    pagination_class = PageNumberPagination
+
+    pagination_class =DefaultPagination
 class ProductRetreive(generics.RetrieveAPIView):
     queryset=Product.objects.prefetch_related('images').all()
     serializer_class =ProductSerializer
@@ -227,19 +291,33 @@ class ProductDestroy(generics.DestroyAPIView):
             return Response({'error': 'Product cannot be deleted because it is associated with an order item.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
+#SubCategory CRUD
+class SubCollectionCreate(generics.CreateAPIView):
+    queryset=Collection.objects.all()
+    serializer_class =SubCollectionSerializer
+    permission_classes =[IsAminOrReadOnly]
+class SubCollectionRetreive(generics.RetrieveAPIView):
+    queryset=Collection.objects.all()
+    serializer_class =ListSubCollectionSerializer
+    permission_classes =[IsAminOrReadOnly]
+class SubCollectionUpdate(generics.UpdateAPIView):
+    queryset=Collection.objects.all()
+    serializer_class =SubCollectionSerializer
+    permission_classes =[IsAminOrReadOnly]
 #Category CRUD
 class CollectionCreate(generics.CreateAPIView):
     queryset=Collection.objects.all()
     serializer_class =CollectionSerializer
     permission_classes =[IsAminOrReadOnly]
+
 class CollectionList(generics.ListAPIView):
     queryset=Collection.objects.all()
-    serializer_class =CollectionSerializer
+    serializer_class =ListCollectionSerializer
 class CollectionRetreive(generics.RetrieveAPIView):
     queryset=Collection.objects.all()
-    serializer_class =CollectionSerializer
+    serializer_class =ListCollectionSerializer
     permission_classes =[IsAminOrReadOnly]
+
 class CollectionUpdate(generics.UpdateAPIView):
     queryset=Collection.objects.all()
     serializer_class =CollectionSerializer

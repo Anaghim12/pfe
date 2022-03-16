@@ -62,12 +62,16 @@ urlpatterns =[
     path('slide/add/',views.SlideCreateViewSet.as_view()),
     path('slide/<int:pk>/destory/',views.SlideDestroyViewSet.as_view()),
     path('slide/<int:pk>/update/',views.SlideUpdateViewSet.as_view()),
-    #manage reviews
-    path('reviews/',views.ReviewListViewSet.as_view()),
-    path('reviews/add/',views.ReviewCreateViewSet.as_view()),
-    # path('reviews/<int:pk>/destory/',views.ReviewDestroyViewSet.as_view()),
-    # path('reviews/<int:pk>/update/',views.ReviewUpdateViewSet.as_view()),
-
+    #manage the user reviews of product
+    path('products/<int:product_pk>/reviews/add',views.ReviewCreateViewSet.as_view()),
+    path('products/<int:product_pk>/reviews/update/<int:pk>',views.ReviewUpdateViewSet.as_view()),
+    path('products/reviews/',views.ReviewListViewSet.as_view()),
+    path('products/<int:product_pk>/reviews/destroy/<int:pk>',views.ReviewDestroyViewSet.as_view()),
+    #manage the user reviews of store
+    path('stores/<int:store_pk>/reviews/add',views.StoreCreateViewSet.as_view()),
+    path('stores/<int:store_pk>/reviews/update/<int:pk>',views.StoreUpdateViewSet.as_view()),
+    path('stores/reviews/',views.StoreListViewSet.as_view()),
+    path('stores/<int:store_pk>/reviews/destroy/<int:pk>',views.StoreDestroyViewSet.as_view()),
 
 
 

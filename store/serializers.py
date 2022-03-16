@@ -2,15 +2,8 @@ from django.db import transaction
 from rest_framework import serializers
 #pour convertir en decimal a number
 from decimal import Decimal
-from .models import Cart, CartItem, Collection, Order, OrderItem, Product ,Customer, ProductImage, Review, Slide
-#collectionSerializer
-class CollectionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model =Collection
-        fields =['id','title']
-        # fields =['id','title','products_count']
+from .models import *
 
-        products_count = serializers.IntegerField(read_only=True)
 
 class ProductImageSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
@@ -139,11 +132,53 @@ class SlideSerializer(serializers.ModelSerializer):
 
 #ReviewSerializer
 class ReviewSerializer(serializers.ModelSerializer):
-    def create(self, validated_data):
-        product_id = self.context['product_id']
-        return Review.objects.create(product_id=product_id, **validated_data)
     class Meta:
         model = Review
-        fields =['id','date','name','description']
+        fields =['id','date','description','name','product']
+
+class CreateReviewSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        name = self.context['name']
+        product_id =self.context['product_id']
+        return Review.objects.create(product_id =product_id,name=name,**validated_data)
+    class Meta:
+        model = Review
+        fields =['id','date','description']
+#ReviewSerializer
+class StoreReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StoreReview
+        fields =['id','date','description','name','store']
+
+class CreateStoreReviewSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        name = self.context['name']
+        store_id =self.context['store_id']
+        return StoreReview.objects.create(store_id =store_id,name=name,**validated_data)
+    class Meta:
+        model = StoreReview
+        fields =['id','date','description']
+
+#collectionSerializer
 
 
+class CollectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model =Collection
+        fields =['id','title','is_active','SubCollections']
+#subcategoriesSerializer
+class SubCollectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubCollection
+        fields =['id','title']
+class ListSubCollectionSerializer(serializers.ModelSerializer):
+    products =SimpleProductSerializer(many=True, read_only=True) 
+    class Meta:
+        model =SubCollection
+        fields =['id','title','products']
+
+class ListCollectionSerializer(serializers.ModelSerializer):
+    SubCollections =ListSubCollectionSerializer(many=True, read_only=True) 
+    class Meta:
+        model =Collection
+        fields =['id','title','SubCollections']

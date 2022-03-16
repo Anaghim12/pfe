@@ -35,7 +35,7 @@ class ProductAdmin(admin.ModelAdmin):
     #this a custom action we added
     actions = ['clear_inventory']
     list_display = ['title', 'unit_price',
-                    'inventory_status', 'collection_title']
+                    'inventory_status', 'collection_title','store']
     list_editable = ['unit_price']
     list_filter = ['collection', 'last_update', InventoryFilter]
     list_per_page = 10
@@ -69,6 +69,9 @@ class CollectionAdmin(admin.ModelAdmin):
     autocomplete_fields = ['featured_product']
     list_display = ['title']
     search_fields = ['title']
+    prepopulated_fields = {
+        'slug': ['title']
+    }
 
 
 @admin.register(models.Store)
@@ -134,4 +137,14 @@ class CustomerAdmin(admin.ModelAdmin):
 class ReviewAdmin(admin.ModelAdmin):
     list_display = ['product','name','description','date']
 
-
+#store Reviews
+@admin.register(models.StoreReview)
+class StoreReviewAdmin(admin.ModelAdmin):
+    list_display = ['store','name','description','date']
+#store Reviews
+@admin.register(models.SubCollection)
+class SubCollectionAdmin(admin.ModelAdmin):
+    list_display = ['title','slug','is_active','collection']
+    prepopulated_fields = {
+        'slug': ['title']
+    }
