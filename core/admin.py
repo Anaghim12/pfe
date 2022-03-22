@@ -11,7 +11,7 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('username', 'password1', 'password2','email','first_name','last_name','type'),
         }),
     )
-
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff','type')
 @admin.register(Type)
 class TypeAdmin(admin.ModelAdmin):
     list_display = ['role']

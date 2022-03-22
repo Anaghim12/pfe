@@ -39,8 +39,8 @@ urlpatterns =[
     path('products/<int:product_pk>/images/add',views.ProductImageCreateViewSet.as_view()),
     path('products/<int:product_pk>/images/update/<int:pk>',views.ProductImageUpdateViewSet.as_view()),
     path('products/<int:product_pk>/images/<int:pk>',views.ProductImageRetrieveViewSet.as_view()),
-    path('products/<int:product_pk>/images/',views.ProductImageListViewSet),
-    path('products/<int:product_pk>/images/destroy/<int:pk>',views.ProductDestroy.as_view()),
+    path('products/<int:product_pk>/images/',views.ProductImageListViewSet),#problème ici
+    path('products/<int:product_pk>/images/destroy/<int:pk>',views.ProductImageDestroyViewSet.as_view()),
     #manage cart
     path('carts/add',views.CartCreateViewSet.as_view()),
     path('carts/<pk>',views.CartRetrieveViewSet.as_view()),
@@ -72,7 +72,42 @@ urlpatterns =[
     path('stores/<int:store_pk>/reviews/update/<int:pk>',views.StoreUpdateViewSet.as_view()),
     path('stores/reviews/',views.StoreListViewSet.as_view()),
     path('stores/<int:store_pk>/reviews/destroy/<int:pk>',views.StoreDestroyViewSet.as_view()),
-
+    #search and filters 
+    path('products/search',views.search),
+    #manage productWishList
+    path('wishprod/add',views.ProdWishListCreateViewSet.as_view()),
+    path('wishprod/',views.ProdWishListListViewSet.as_view()),
+    path('wishprod/<int:pk>',views.ProdWishListRetreiveViewSet.as_view()),
+    path('wishprod/destroy/<int:pk>',views.ProdWishListDestroyViewSet.as_view()),
+    #manage productItemWishList
+    #path('wishprod/items/<pk>',views.ItemCartRetreiveViewSet.as_view()),
+    path('wishprod/items/<pk>/destroy',views.ProdItemWishListDestroyViewSet.as_view()),
+    path('wishprod/items/<pk>/update',views.ProdItemWishListUpdateViewSet.as_view()),
+    path('wishprod/items/',views.ProdItemWishListListViewSet.as_view()),
+    path('wishprod/items/add',views.ProdItemWishListCreateViewSet.as_view()),
+    #manage storeWishList
+    path('wishstore/add',views.StoreWishListCreateViewSet.as_view()),
+    path('wishstore/',views.StoreWishListListViewSet.as_view()),
+    path('wishstore/<int:pk>',views.StoreWishListRetreiveViewSet.as_view()),
+    path('wishstore/destroy/<int:pk>',views.StoreWishListDestroyViewSet.as_view()),
+    #manage storeItemWishList
+    path('wishstore/items/<pk>/destroy',views.StoreItemWishListDestroyViewSet.as_view()),
+    path('wishstore/items/<pk>/update',views.StoreItemWishListUpdateViewSet.as_view()),
+    path('wishstore/items/',views.StoreItemWishListListViewSet.as_view()),
+    path('wishstore/items/add',views.StoreItemWishListCreateViewSet.as_view()),
+    #manage the store
+    path('stores/',views.StoreList.as_view()),
+    path('stores/add/',views.StoreCreate.as_view()),
+    path('stores/<int:pk>',views.StoreRetreive.as_view()),
+    path('stores/destroy/<int:pk>',views.StoreDestroy.as_view()),
+    path('stores/update/<int:pk>',views.StoreUpdate.as_view()),     
+    # manage store images
+    path('stores/<int:store_pk>/images/add',views.StoreImageCreateViewSet.as_view()),
+    path('stores/<int:store_pk>/images/update/<int:pk>',views.StoreImageUpdateViewSet.as_view()),
+    #path('stores/<int:store_pk>/images/<int:pk>',views.StoreImageRetrieveViewSet.as_view()),
+    path('stores/<int:store_pk>/images/',views.StoreImageListViewSet),#problème ici
+    path('stores/<int:store_pk>/images/destroy/<int:pk>',views.StoreDestroy.as_view()),
+    
 
 
 

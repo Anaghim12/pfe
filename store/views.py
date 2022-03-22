@@ -1,17 +1,20 @@
-from itertools import product
-from django.db.models.aggregates import Count
+
 
 #fro rest_framework
+from multiprocessing import context
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from rest_framework import status
 
-from store.filters import ProductFilter
-from store.pagination import DefaultPagination
-from store.permissions import IsAminOrReadOnly
+from django.db.models.aggregates import Count
+from django.db.models import Q 
+from .filters import ProductFilter
+from .pagination import DefaultPagination
+from .permissions import IsAminOrReadOnly
 from .models import *
 from .serializers import *
 from .pagination import *
-from rest_framework import status
+
 from django.shortcuts import get_object_or_404
 # this is for using class-based views
 
@@ -24,11 +27,232 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 #searching
 from rest_framework.filters import SearchFilter , OrderingFilter
-#this is for pagination
-from rest_framework.pagination import PageNumberPagination
-# this for cart 
-from rest_framework.mixins import CreateModelMixin
-from rest_framework.viewsets import GenericViewSet
+#Manage store Images
+class StoreImageCreateViewSet(generics.CreateAPIView):
+    
+    serializer_class = StoreImageSerializer
+    def get_serializer_context(self):
+        return {'store_id':self.kwargs['store_pk']}
+    def get_queryset(self):
+        return StoreImage.objects.filter(store_id= self.kwargs['store_pk'])# to bring from the url the id of the product
+
+class StoreImageUpdateViewSet(generics.UpdateAPIView):
+    
+    serializer_class = StoreImageSerializer
+    def get_serializer_context(self):
+        return {'store_id':self.kwargs['store_pk']}
+    def get_queryset(self):
+        return StoreImage.objects.filter(store_id= self.kwargs['store_pk'])
+
+class StoreImageRetrieveViewSet(generics.RetrieveAPIView):
+    
+    serializer_class = StoreImageSerializer
+    def get_serializer_context(self):
+        return {'store_id':self.kwargs['store_pk']}
+    def get_queryset(self):
+        return StoreImage.objects.filter(store_id= self.kwargs['store_pk'])
+
+class StoreImageListViewSet(generics.ListAPIView):
+    
+    serializer_class = StoreImageSerializer
+    def get_serializer_context(self):
+        return {'store_id':self.kwargs['store_pk']}
+    def get_queryset(self):
+        return StoreImage.objects.filter(store_id= self.kwargs['store_pk'])
+class StoreImageDestroyViewSet(generics.DestroyAPIView):
+    
+    serializer_class = StoreImageSerializer
+
+    def get_queryset(self):
+        return StoreImage.objects.filter(store_id= self.kwargs['store_pk'])
+
+
+
+
+
+
+#manage store
+class StoreCreate(generics.CreateAPIView):
+    queryset=Store.objects.all()
+    serializer_class =StoreSerializer
+    permission_classes = [IsAuthenticated]
+
+class StoreList(generics.ListAPIView):
+    queryset=Store.objects.prefetch_related('StoreImage').all()
+    serializer_class =StoreSerializer
+    permission_classes = [IsAuthenticated]
+
+    pagination_class =DefaultPagination
+class StoreRetreive(generics.RetrieveAPIView):
+    queryset=Store.objects.prefetch_related('StoreImage').all()
+    serializer_class =StoreSerializer
+    permission_classes = [IsAuthenticated]
+
+class StoreUpdate(generics.UpdateAPIView):
+    queryset=Store.objects.all()
+    serializer_class =StoreSerializer
+    permission_classes = [IsAuthenticated]
+
+class StoreDestroy(generics.DestroyAPIView):
+    serializer_class =StoreSerializer
+    permission_classes = [IsAuthenticated]
+    queryset=Store.objects.all()
+
+#manage prodwishList
+class StoreWishListListViewSet(generics.ListAPIView):
+    serializer_class = StoreWishListSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return StoreWishList.objects.prefetch_related('store_item_wish__store').all()
+        return StoreWishList.objects.prefetch_related('store_item_wish__store').filter(user=user)
+#normalement n'est important celle ci (pas la peine de l'implémenter)
+class StoreWishListRetreiveViewSet(generics.RetrieveAPIView):
+    serializer_class = StoreWishListSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return StoreWishList.objects.prefetch_related('store_item_wish__store').all()
+        return StoreWishList.objects.prefetch_related('store_item_wish__store').filter(user=user)
+
+class StoreWishListDestroyViewSet(generics.DestroyAPIView):
+    serializer_class = StoreWishListSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return StoreWishList.objects.all()
+        return StoreWishList.objects.filter(user=user)
+
+class StoreWishListCreateViewSet(generics.CreateAPIView):
+    serializer_class = StoreWishListSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = StoreWishList.objects.all()
+
+
+#manage storeItemWishList
+class StoreItemWishListListViewSet(generics.ListAPIView):
+    serializer_class = StoreItemWishListSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return StoreItemWishList.objects.all()
+        return StoreItemWishList.objects.filter(user=user)
+
+class StoreItemWishListCreateViewSet(generics.CreateAPIView):
+    serializer_class = AddStoreItemWishListSerializer
+    permission_classes = [IsAuthenticated]
+    # def get_serializer_context(self):
+    #     return {'user_id':self.request.user}
+    queryset= StoreItemWishList.objects.all()
+
+class StoreItemWishListDestroyViewSet(generics.DestroyAPIView):
+    serializer_class = StoreItemWishListSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return StoreItemWishList.objects.all()
+        return StoreItemWishList.objects.filter(user=user)
+class StoreItemWishListUpdateViewSet(generics.UpdateAPIView):
+    serializer_class = AddStoreItemWishListSerializer
+    permission_classes = [IsAuthenticated]
+    def get_serializer_context(self):
+        return {'user':self.request.user}
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return StoreItemWishList.objects.all()
+        return StoreItemWishList.objects.filter(user=user)
+
+
+
+    
+
+
+#manage prodItemWishList
+class ProdItemWishListListViewSet(generics.ListAPIView):
+    serializer_class = prodItemWishListSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return ProdItemWishList.objects.all()
+        return ProdItemWishList.objects.filter(user=user)
+
+class ProdItemWishListCreateViewSet(generics.CreateAPIView):
+    serializer_class = AddprodItemWishListSerializer
+    permission_classes = [IsAuthenticated]
+    # def get_serializer_context(self):
+    #     return {'user_id':self.request.user}
+    queryset= ProdItemWishList.objects.all()
+
+class ProdItemWishListDestroyViewSet(generics.DestroyAPIView):
+    serializer_class = prodItemWishListSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return ProdItemWishList.objects.all()
+        return ProdItemWishList.objects.filter(user=user)
+class ProdItemWishListUpdateViewSet(generics.UpdateAPIView):
+    serializer_class = AddprodItemWishListSerializer
+    permission_classes = [IsAuthenticated]
+    # def get_serializer_context(self):
+    #     return {'user':self.request.user}
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return ProdItemWishList.objects.all()
+        return ProdItemWishList.objects.filter(user=user)
+#manage prodwishList
+class ProdWishListListViewSet(generics.ListAPIView):
+    serializer_class = ProdWishListSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return ProdWishList.objects.prefetch_related('prod_item_wish__products').all()
+        return ProdWishList.objects.prefetch_related('prod_item_wish__products').filter(user=user)
+
+class ProdWishListRetreiveViewSet(generics.RetrieveAPIView):
+    serializer_class = ProdWishListSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return ProdWishList.objects.prefetch_related('prod_item_wish__products').all()
+        return ProdWishList.objects.prefetch_related('prod_item_wish__products').filter(user=user)
+
+class ProdWishListDestroyViewSet(generics.DestroyAPIView):
+    serializer_class = ProdWishListSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return ProdWishList.objects.all()
+        return ProdWishList.objects.filter(user=user)
+
+class ProdWishListCreateViewSet(generics.CreateAPIView):
+    serializer_class = ProdWishListSerializer
+    permission_classes = [IsAuthenticated]
+
+    queryset = ProdWishList.objects.all()
+
+#manage StoreWishList
+#search and filters 
+api_view(['POST'])
+def search(request):
+    query= request.data.get()
+    if query:
+        products=Product.objects.filter(Q(title__icontains =query)| Q(description__icontains=query))
+        serializer= ProductSerializer(products,many=True)
+        return Response(serializer.data)
+    else:
+        return Response({'products':[]})
 #Manage Client Reviews to the product
 class ReviewCreateViewSet(generics.CreateAPIView):
     serializer_class = CreateReviewSerializer
@@ -271,7 +495,11 @@ class ProductCreate(generics.CreateAPIView):
 class ProductList(generics.ListAPIView):
     queryset=Product.objects.prefetch_related('images').all()
     serializer_class =ProductSerializer
-
+    filter_backends  =[DjangoFilterBackend,SearchFilter,OrderingFilter]
+    filterset_class = ProductFilter
+    pagination_class = DefaultPagination
+    search_fields = ['title','description']
+    ordering_fields =['unit_price','last_update']
     pagination_class =DefaultPagination
 class ProductRetreive(generics.RetrieveAPIView):
     queryset=Product.objects.prefetch_related('images').all()

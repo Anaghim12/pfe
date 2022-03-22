@@ -1,9 +1,6 @@
-from distutils.command.upload import upload
-from tkinter import CASCADE
-from wsgiref.validate import validator
 from django.conf import settings
 from django.db import models
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator,MaxValueValidator
 # Create your models here.
 from django.db import models
 #authentifications: creating user Profiles
@@ -55,6 +52,7 @@ class Product(models.Model):
     characteristic = models.TextField() # les caractérique du produit comming from front "assurer le dynamisme"
     store = models.ForeignKey('Store',on_delete=models.CASCADE,related_name='products',default=4)
     sub_collection = models.ForeignKey('SubCollection',on_delete=models.CASCADE,related_name='products',default=1)
+    # product_wishlist = models.ForeignKey('ProdWishList',on_delete=models.PROTECT,related_name='products',default=1)
     def __str__(self):
         return self.title
     
@@ -63,6 +61,45 @@ class Product(models.Model):
 class ProductImage(models.Model):
     product = models.ForeignKey(Product,on_delete=models.CASCADE,related_name='images')
     image = models.ImageField(upload_to='store/prod')
+    def __str__(self):
+        return str(self.image)
+        
+class ProdWishList(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL,primary_key=True, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def username(self):
+        return self.user.username
+    def __str__(self):
+        return str(self.user)
+class ProdItemWishList(models.Model):
+    user = models.ForeignKey(ProdWishList, on_delete=models.CASCADE,related_name='prod_item_wish')
+    products=models.ForeignKey(Product,on_delete=models.CASCADE,related_name='prod_item_wish')
+    note = models.IntegerField(null=True,validators=[MinValueValidator(1),MaxValueValidator(5)])
+    def username(self):
+        return self.user.user.username
+    def __str__(self):
+        return str(self.user)
+#manage store wishlist
+
+class StoreWishList(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL,primary_key=True, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def username(self):
+        return self.user.username
+    def __str__(self):
+        return str(self.user)
+class StoreItemWishList(models.Model):
+    user = models.ForeignKey(StoreWishList, on_delete=models.CASCADE,related_name='store_item_wish')
+    store=models.ForeignKey('Store',on_delete=models.CASCADE,related_name='store_item_wish')
+    note = models.IntegerField(null=True,validators=[MinValueValidator(1),MaxValueValidator(5)])
+    def username(self):
+        return self.user.user.username
+    def __str__(self):
+        return str(self.store)
+
+# class StoreWishList(models.Model):
+#     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+#     note = models.IntegerField(null=True,validators=[MinValueValidator(1),MaxValueValidator(5)])
 
 class Customer(models.Model):
     MEMBERSHIP_BRONZE = 'B'
@@ -111,16 +148,15 @@ class Store(models.Model):
         (MEMBERSHIP_GOLD, 'Gold'),
     ]
     store_name= models.CharField(max_length=255,blank=False)
-    order_count =models.BigIntegerField(blank=True)
+    order_count =models.BigIntegerField(blank=True,null=True)
     description= models.TextField()
     brand = models.TextField(blank=True)
-    membership = models.CharField(max_length=1, choices=MEMBERSHIP_CHOICES, default=MEMBERSHIP_BRONZE)
+    membership = models.CharField(max_length=1, choices=MEMBERSHIP_CHOICES, default=MEMBERSHIP_BRONZE,null=True,blank=True)
+    
     #auth: create user profile
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-
     def __str__(self):
         return self.store_name
-    
     class Meta:
         ordering=['store_name']
 class StoreImage(models.Model):

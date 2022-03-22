@@ -27,7 +27,7 @@ class TagInline(GenericTabularInline):
 @admin.register(models.Product)
 class ProductAdmin(admin.ModelAdmin):
     inline =[TagInline]
-    autocomplete_fields = ['collection']
+    autocomplete_fields = ['collection','store']
     #le slug est auto-generated
     prepopulated_fields = {
         'slug': ['title']
@@ -62,6 +62,41 @@ class ProductAdmin(admin.ModelAdmin):
             f'{updated_count} products were successfully updated.',
             messages.SUCCESS
         )
+# @admin.register(models.StoreWishList)
+# class StoreWishListAdmin(admin.ModelAdmin):
+#     list_display = ['user','note']
+
+@admin.register(models.ProdWishList)
+class ProdWishListAdmin(admin.ModelAdmin):
+    list_display = ['username','created_at']
+    autocomplete_fields = ['user']
+    list_select_related =['user']
+    search_fields = ['user']
+    # def user_first_name(self, ProdWishList):
+    #     return ProdWishList.user.first_name
+
+@admin.register(models.ProdItemWishList)
+class ProdItemWishListAdmin(admin.ModelAdmin):
+    list_display = ['username','products','note']
+    autocomplete_fields = ['user','products']
+    list_select_related =['user']
+    search_fields = ['user']
+
+# store wishlist
+@admin.register(models.StoreWishList)
+class StoreWishListAdmin(admin.ModelAdmin):
+    list_display = ['username','created_at']
+    autocomplete_fields = ['user']
+    list_select_related =['user']
+    search_fields = ['user']
+
+
+@admin.register(models.StoreItemWishList)
+class StoreItemWishListAdmin(admin.ModelAdmin):
+    list_display = ['username','store','note']
+    autocomplete_fields = ['user','store']
+    list_select_related =['user']
+    search_fields = ['user']
 
 
 @admin.register(models.Collection)

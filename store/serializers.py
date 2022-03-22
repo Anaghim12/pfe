@@ -1,9 +1,18 @@
+from dataclasses import fields
 from django.db import transaction
 from rest_framework import serializers
 #pour convertir en decimal a number
 from decimal import Decimal
 from .models import *
 
+#storeimageserializer
+class StoreImageSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        store_id =self.context['store_id']
+        return StoreImage.objects.create(store_id =store_id , **validated_data)
+    class Meta:
+        model = StoreImage
+        fields =['id','brand_image','store_image']
 
 class ProductImageSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
@@ -37,6 +46,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         fields = ['id', 'user_id', 'phone', 'birth_date', 'membership']  
 #'user_id 'is created dynamically at run time
 #product simple object (pour minimiser les fields)
+    
 class SimpleProductSerializer(serializers.ModelSerializer):
     class Meta: 
         model = Product
@@ -51,6 +61,15 @@ class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
         fields =['id','product','quantity','total_price']
+#prodWishListItem
+
+class AddProdWishListSerializer(serializers.ModelSerializer):
+    user_id =serializers.IntegerField()# capture current user
+    product_id =serializers.IntegerField()#capture de url
+    class Meta:
+        model =CartItem
+        fields = ['id','product_id','note','user_id']
+
 #cartitem(Create a new item)#on le définit car on a besoin pour ce faire : product_id à ajouter
 class AddCartItemSerializer(serializers.ModelSerializer):
     # we define this because it is dynamically created
@@ -70,6 +89,57 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields =['id','items','total_price']
+class prodItemWishListSerializer(serializers.ModelSerializer):
+    products  = SimpleProductSerializer()
+    class Meta:
+        model = ProdItemWishList
+        fields =['user','id','products','note']
+class ProdWishListSerializer(serializers.ModelSerializer):
+    prod_item_wish = prodItemWishListSerializer(many=True,read_only = True)
+    class Meta:
+        model = ProdWishList
+        fields =['user','prod_item_wish']
+class AddprodItemWishListSerializer(serializers.ModelSerializer):
+    # def create(self, validated_data):
+    #     user_id = self.context['user_id']
+    #     return ProdItemWishList.objects.create(user_id=user_id,**validated_data)
+    products_id =serializers.IntegerField()
+    class Meta:
+        model = ProdItemWishList
+        fields = ['user','id','products_id','note']
+#store wish list
+class SimpleStoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= Store
+        fields =['id','store_name','description']
+class StoreItemWishListSerializer(serializers.ModelSerializer):
+    store  = SimpleStoreSerializer()
+    class Meta:
+        model = StoreItemWishList
+        fields =['id','store','note']
+class StoreWishListSerializer(serializers.ModelSerializer):
+    store_item_wish = StoreItemWishListSerializer(many=True,read_only = True)
+    class Meta:
+        model = StoreWishList
+        fields =['user','store_item_wish']
+class AddStoreItemWishListSerializer(serializers.ModelSerializer):
+    # def create(self, validated_data):
+    #     user_id = self.context['user_id']
+    #     return StoreItemWishList.objects.create(user_id=user_id,**validated_data)
+    store_id =serializers.IntegerField()
+    class Meta:
+        model = StoreItemWishList
+        fields = ['user','id','store_id','note']
+#store
+    # def create(self, validated_data):
+    #     user = self.context['user']
+    #     return StoreReview.objects.create(user=user,**validated_data)
+class StoreSerializer(serializers.ModelSerializer):
+    user: serializers.IntegerField()
+    class Meta:
+        model = Store
+        fields =['id','user','store_name','description','brand']
+
 #orderitemSerializer
 class OrderItemSerializer(serializers.ModelSerializer):
     product = SimpleProductSerializer()
@@ -182,3 +252,19 @@ class ListCollectionSerializer(serializers.ModelSerializer):
     class Meta:
         model =Collection
         fields =['id','title','SubCollections']
+
+# class ProductWishListSerializer(serializers.ModelSerializer):
+#     def create(self, validated_data):
+#         user=self.context['user']
+#         return ProductImage.objects.create(user=user , **validated_data)
+#     class Meta:
+#         model = ProdItemWishList
+#         fields =['id','products','note']
+
+# class StoreWishListSerializer(serializers.ModelSerializer):
+#     def create(self, validated_data):
+#         user=self.context['user']
+#         return ProductImage.objects.create(user=user , **validated_data)
+#     class Meta:
+#         model = StoreWishList
+#         fields =['id','stores','note']
