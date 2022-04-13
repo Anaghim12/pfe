@@ -29,13 +29,13 @@ class ProductAdmin(admin.ModelAdmin):
     inline =[TagInline]
     autocomplete_fields = ['collection','store']
     #le slug est auto-generated
-    prepopulated_fields = {
-        'slug': ['title']
-    }
+    # prepopulated_fields = {
+    #     'slug': ['title']
+    # }
     #this a custom action we added
     actions = ['clear_inventory']
     list_display = ['title', 'unit_price',
-                    'inventory_status', 'collection_title','store']
+                    'inventory_status','store','inventory','is_active']
     list_editable = ['unit_price']
     list_filter = ['collection', 'last_update', InventoryFilter]
     list_per_page = 10
@@ -104,14 +104,14 @@ class CollectionAdmin(admin.ModelAdmin):
     autocomplete_fields = ['featured_product']
     list_display = ['title']
     search_fields = ['title']
-    prepopulated_fields = {
-        'slug': ['title']
-    }
+    # prepopulated_fields = {
+    #     'slug': ['title']
+    # }
 
 
 @admin.register(models.Store)
 class StoreAdmin(admin.ModelAdmin):
-    list_display = ['store_name','description','brand','user']
+    list_display = ['store_name','user','order_count','membership']
     search_fields = ['store_name']
 @admin.register(models.Cart)
 class CartAdmin(admin.ModelAdmin):
@@ -145,7 +145,7 @@ class ProductImageAdmin(admin.ModelAdmin):
 
 @admin.register(models.Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ['first_name', 'last_name',  'membership', 'orders']
+    list_display = ['first_name', 'last_name',  'membership', 'order_count',]
     list_editable = ['membership']
     list_per_page = 10
     # auth : customer profile
@@ -153,16 +153,7 @@ class CustomerAdmin(admin.ModelAdmin):
     ordering = ['user__first_name', 'user__last_name']
     search_fields = ['first_name__istartswith', 'last_name__istartswith']
 
-    @admin.display(ordering='orders_count')
-    def orders(self, customer):
-        url = (
-            reverse('admin:store_order_changelist')
-            + '?'
-            + urlencode({
-                'customer__id': str(customer.id)
-            }))
-        return format_html('<a href="{}">{} Orders</a>', url, customer.orders_count)
-
+   
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
             orders_count=Count('order')
@@ -175,11 +166,11 @@ class ReviewAdmin(admin.ModelAdmin):
 #store Reviews
 @admin.register(models.StoreReview)
 class StoreReviewAdmin(admin.ModelAdmin):
-    list_display = ['store','name','description','date']
+    list_display = ['store','description','date']
 #store Reviews
 @admin.register(models.SubCollection)
 class SubCollectionAdmin(admin.ModelAdmin):
     list_display = ['title','slug','is_active','collection']
-    prepopulated_fields = {
-        'slug': ['title']
-    }
+    # prepopulated_fields = {
+    #     'slug': ['title']
+    # }

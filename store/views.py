@@ -1,23 +1,16 @@
-
-
-#fro rest_framework
-from multiprocessing import context
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
-
 from django.db.models.aggregates import Count
 from django.db.models import Q 
 from .filters import ProductFilter
 from .pagination import DefaultPagination
-from .permissions import IsAminOrReadOnly
+from .permissions import *
 from .models import *
 from .serializers import *
 from .pagination import *
-
 from django.shortcuts import get_object_or_404
 # this is for using class-based views
-
 from rest_framework import generics
 # to get the current user profile
 from rest_framework.decorators import  permission_classes
@@ -29,7 +22,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter , OrderingFilter
 #Manage store Images
 class StoreImageCreateViewSet(generics.CreateAPIView):
-    
+    permission_classes = [VendeurOrReadOnly]
     serializer_class = StoreImageSerializer
     def get_serializer_context(self):
         return {'store_id':self.kwargs['store_pk']}
@@ -37,7 +30,7 @@ class StoreImageCreateViewSet(generics.CreateAPIView):
         return StoreImage.objects.filter(store_id= self.kwargs['store_pk'])# to bring from the url the id of the product
 
 class StoreImageUpdateViewSet(generics.UpdateAPIView):
-    
+    permission_classes = [VendeurOwnerStoreOrReadOnly]
     serializer_class = StoreImageSerializer
     def get_serializer_context(self):
         return {'store_id':self.kwargs['store_pk']}
@@ -60,27 +53,21 @@ class StoreImageListViewSet(generics.ListAPIView):
     def get_queryset(self):
         return StoreImage.objects.filter(store_id= self.kwargs['store_pk'])
 class StoreImageDestroyViewSet(generics.DestroyAPIView):
-    
+    permission_classes = [VendeurOwnerStoreOrReadOnly]
     serializer_class = StoreImageSerializer
 
     def get_queryset(self):
         return StoreImage.objects.filter(store_id= self.kwargs['store_pk'])
 
-
-
-
-
-
 #manage store
 class StoreCreate(generics.CreateAPIView):
     queryset=Store.objects.all()
     serializer_class =StoreSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser,VendeurOrReadOnly]
 
 class StoreList(generics.ListAPIView):
     queryset=Store.objects.prefetch_related('StoreImage').all()
     serializer_class =StoreSerializer
-    permission_classes = [IsAuthenticated]
 
     pagination_class =DefaultPagination
 class StoreRetreive(generics.RetrieveAPIView):
@@ -91,12 +78,12 @@ class StoreRetreive(generics.RetrieveAPIView):
 class StoreUpdate(generics.UpdateAPIView):
     queryset=Store.objects.all()
     serializer_class =StoreSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [VendeurOwnerStoreOrReadOnly]
 
 class StoreDestroy(generics.DestroyAPIView):
-    serializer_class =StoreSerializer
-    permission_classes = [IsAuthenticated]
     queryset=Store.objects.all()
+    serializer_class =StoreSerializer
+    permission_classes = [IsAdminUser,VendeurOwnerStoreOrReadOnly]
 
 #manage prodwishList
 class StoreWishListListViewSet(generics.ListAPIView):
@@ -167,12 +154,6 @@ class StoreItemWishListUpdateViewSet(generics.UpdateAPIView):
         if user.is_staff:
             return StoreItemWishList.objects.all()
         return StoreItemWishList.objects.filter(user=user)
-
-
-
-    
-
-
 #manage prodItemWishList
 class ProdItemWishListListViewSet(generics.ListAPIView):
     serializer_class = prodItemWishListSerializer
@@ -244,15 +225,15 @@ class ProdWishListCreateViewSet(generics.CreateAPIView):
 
 #manage StoreWishList
 #search and filters 
-api_view(['POST'])
-def search(request):
-    query= request.data.get()
-    if query:
-        products=Product.objects.filter(Q(title__icontains =query)| Q(description__icontains=query))
-        serializer= ProductSerializer(products,many=True)
-        return Response(serializer.data)
-    else:
-        return Response({'products':[]})
+class SearchProduct(generics.ListAPIView):
+    serializer_class =ProductSerializer
+    def get_queryset(self,*args,**kwargs):
+        q= self.request.GET.get('q')
+        result=Product.objects.none()
+        if q is not None :
+            lookup=Q(title__icontains=q)|Q(description__icontains=q)|Q(store__store_name__icontains=q)
+            result= Product.objects.filter(is_active=True).filter(lookup)
+        return result
 #Manage Client Reviews to the product
 class ReviewCreateViewSet(generics.CreateAPIView):
     serializer_class = CreateReviewSerializer
@@ -355,7 +336,7 @@ class SlideDestroyViewSet(generics.DestroyAPIView):
 #Manage Orders
 class OrderCreateViewSet(generics.CreateAPIView):
     serializer_class = CreateOrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [ClientOwnAProfile]
     def create(self, request, *args, **kwargs):
         # we use the first serializer (CreateOrderSerializer) to do the first part of the job (voir serializer)
         serializer = CreateOrderSerializer(
@@ -372,7 +353,7 @@ class OrderCreateViewSet(generics.CreateAPIView):
 
 class OrderListViewSet(generics.ListAPIView):
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [ClientOwnAProfile]
     def get_queryset(self):
         user = self.request.user
         # s'il s'agit d'un admin il va voir tous les orders
@@ -439,7 +420,7 @@ class CartDestroyViewSet(generics.DestroyAPIView):
     serializer_class = CartSerializer
 #Manage Product Images
 class ProductImageCreateViewSet(generics.CreateAPIView):
-    
+    permission_classes=[VendeurOwnerStoreOrReadOnly,IsAdminUser]
     serializer_class = ProductImageSerializer
     def get_serializer_context(self):
         return {'product_id':self.kwargs['product_pk']}
@@ -447,7 +428,7 @@ class ProductImageCreateViewSet(generics.CreateAPIView):
         return ProductImage.objects.filter(product_id= self.kwargs['product_pk'])# to bring from the url the id of the product
 
 class ProductImageUpdateViewSet(generics.UpdateAPIView):
-    
+    permission_classes=[VendeurOwnerStoreOrReadOnly,IsAdminUser]
     serializer_class = ProductImageSerializer
     def get_serializer_context(self):
         return {'product_id':self.kwargs['product_pk']}
@@ -470,27 +451,24 @@ class ProductImageListViewSet(generics.ListAPIView):
     def get_queryset(self):
         return ProductImage.objects.filter(product_id= self.kwargs['product_pk'])
 class ProductImageDestroyViewSet(generics.DestroyAPIView):
-    
+    permission_classes=[VendeurOwnerStoreOrReadOnly,IsAdminUser]
     serializer_class = ProductImageSerializer
 
     def get_queryset(self):
-        return ProductImage.objects.filter(product_id= self.kwargs['product_pk'])
-#auth
-class CustomerCreateViewSet(generics.CreateAPIView):
-    queryset = Customer.objects.all()
-    serializer_class = CustomerSerializer
-    
-class CustomerRetreiveUpdateViewSet(generics.RetrieveUpdateAPIView):
-    queryset = Customer.objects.all()
-    serializer_class = CustomerSerializer
-    
+        return ProductImage.objects.filter(product_id= self.kwargs['product_pk'])    
 #auth to get current customer(ili 3amil log in )
 
-#Product CRUD
+# manage product
 class ProductCreate(generics.CreateAPIView):
     queryset=Product.objects.all()
     serializer_class =ProductSerializer
-    permission_classes =[IsAminOrReadOnly]
+    permission_classes =[VendeurOrReadOnly,IsAdminUser]
+class MyProductList(generics.ListAPIView):
+    serializer_class =ProductSerializer
+    def get_queryset(self):
+        result = Product.objects.filter(store=self.request.user.store)
+        return result
+    
 
 class ProductList(generics.ListAPIView):
     queryset=Product.objects.prefetch_related('images').all()
@@ -507,11 +485,11 @@ class ProductRetreive(generics.RetrieveAPIView):
 class ProductUpdate(generics.UpdateAPIView):
     queryset=Product.objects.all()
     serializer_class =ProductSerializer
-    permission_classes =[IsAminOrReadOnly]
+    permission_classes =[VendeurOwnerStoreOrReadOnly,IsAdminUser]
 
 class ProductDestroy(generics.DestroyAPIView):
     queryset=Product.objects.all()
-    #permission_classes =[IsAminOrReadOnly]
+    permission_classes =[VendeurOwnerStoreOrReadOnly,IsAdminUser]
     serializer_class =ProductSerializer
     def delete(self,request,pk):
         product = get_object_or_404(Product, pk=pk) # to get the product
@@ -525,9 +503,11 @@ class SubCollectionCreate(generics.CreateAPIView):
     serializer_class =SubCollectionSerializer
     permission_classes =[IsAminOrReadOnly]
 class SubCollectionRetreive(generics.RetrieveAPIView):
-    queryset=Collection.objects.all()
     serializer_class =ListSubCollectionSerializer
     permission_classes =[IsAminOrReadOnly]
+    def get_queryset(self):
+        results= SubCollection.objects.filter(is_active=True)
+        return results
 class SubCollectionUpdate(generics.UpdateAPIView):
     queryset=Collection.objects.all()
     serializer_class =SubCollectionSerializer
@@ -545,6 +525,9 @@ class CollectionRetreive(generics.RetrieveAPIView):
     queryset=Collection.objects.all()
     serializer_class =ListCollectionSerializer
     permission_classes =[IsAminOrReadOnly]
+    def get_queryset(self):
+        results= Collection.objects.filter(is_active=True)
+        return results
 
 class CollectionUpdate(generics.UpdateAPIView):
     queryset=Collection.objects.all()
@@ -584,7 +567,7 @@ class CollectionDestroy(generics.DestroyAPIView):
 class CustomerCreate(generics.CreateAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    permission_classes=[IsAdminUser]
+    # permission_classes=[IsAdminUser]
 class CustomerRetrieve(generics.RetrieveAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
@@ -594,6 +577,14 @@ class CustomerList(generics.ListAPIView):
     serializer_class = CustomerSerializer
     permission_classes=[IsAdminUser]
 class CustomerUpdate(generics.UpdateAPIView):
+    serializer_class = CustomerSerializer
+    permission_classes=[IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return Customer.objects.all()
+        return Customer.objects.all(user=user)
+class CustomerDestroy(generics.DestroyAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     permission_classes=[IsAdminUser]

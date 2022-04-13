@@ -9,14 +9,11 @@ from django.conf import settings
 from django.contrib import admin
 #this is for manage our cart
 from uuid import uuid4
-
-class Promotion(models.Model):
-    description = models.CharField(max_length=255)
-    discount = models.FloatField()
-
+#to auto slugify our slug fields
+from django.urls import reverse
 class Collection(models.Model):
     title = models.CharField(max_length=255)
-    slug = models.SlugField()
+    slug = models.SlugField(blank=True,null=True)
     is_active =models.BooleanField(default=True)
     featured_product = models.ForeignKey(
         'Product', on_delete=models.SET_NULL, null=True, related_name='+',blank=True)
@@ -30,8 +27,8 @@ class Collection(models.Model):
         ordering=['title']
 class SubCollection(models.Model):
     title = models.CharField(max_length=255)
-    slug = models.SlugField()
-    is_active =models.BooleanField()
+    slug = models.SlugField(blank=True,null=True)
+    is_active =models.BooleanField(default=True)
     collection =models.ForeignKey(Collection, on_delete = models.CASCADE,related_name='SubCollections')
     def __str__(self):
         return self.title
@@ -41,23 +38,39 @@ class SubCollection(models.Model):
 
 class Product(models.Model):
     title = models.CharField(max_length=255)
-    slug = models.SlugField()
+    slug = models.SlugField(blank=True,null=True)
     description = models.TextField()
     unit_price = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(1)])
     store_price = models.DecimalField(max_digits=6, decimal_places=2)
-    inventory = models.IntegerField(null=True) #qty
+    inventory = models.IntegerField(default=1) #qty
     last_update = models.DateTimeField(auto_now=True)
     collection = models.ForeignKey(Collection, on_delete=models.PROTECT,related_name='products')
-    promotions = models.ManyToManyField(Promotion,blank=True)
+    # promotions = models.ManyToManyField(Promotion,blank=True)
+    promotion= models.PositiveSmallIntegerField(default=0)
     characteristic = models.TextField() # les caractérique du produit comming from front "assurer le dynamisme"
     store = models.ForeignKey('Store',on_delete=models.CASCADE,related_name='products',default=4)
+    is_active =models.BooleanField(default=True)
     sub_collection = models.ForeignKey('SubCollection',on_delete=models.CASCADE,related_name='products',default=1)
     # product_wishlist = models.ForeignKey('ProdWishList',on_delete=models.PROTECT,related_name='products',default=1)
+    def get_absolute_url(self):
+        return reverse("product-detail",kwargs={"pk":self.id})
     def __str__(self):
         return self.title
     
     class Meta:
         ordering=['title']
+    
+# def product_post_save(*args,**kwargs):
+#     print('pre_save')
+#     print(args,kwargs)
+
+# post_save.connect(product_post_save,sender=Product)
+# def slug_generator(sender, instance, *args,**kwargs):
+#     if not instance.slug:
+#         instance.slug = 'SLUG'
+
+# pre_save.connect(slug_generator, sender=Product)
+
 class ProductImage(models.Model):
     product = models.ForeignKey(Product,on_delete=models.CASCADE,related_name='images')
     image = models.ImageField(upload_to='store/prod')
@@ -119,11 +132,11 @@ class Customer(models.Model):
     street = models.CharField(max_length=255,blank=False,default='no street')
     city = models.CharField(max_length=255,blank=False,default='no city')
     #auth: create user profile
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customer')
     # à gérer back selon des conditions
     membership = models.CharField(
         max_length=1, choices=MEMBERSHIP_CHOICES, default=MEMBERSHIP_BRONZE)
-    order_count =models.BigIntegerField()
+    order_count =models.BigIntegerField(default=0,null=True,blank=True)
     # to combine the last and the first name in the admin pannel
     def __str__(self) -> str:
         return f'{self.user.first_name} {self.user.last_name}'
@@ -148,13 +161,13 @@ class Store(models.Model):
         (MEMBERSHIP_GOLD, 'Gold'),
     ]
     store_name= models.CharField(max_length=255,blank=False)
-    order_count =models.BigIntegerField(blank=True,null=True)
+    order_count =models.BigIntegerField(default=0,blank=True,null=True)
     description= models.TextField()
     brand = models.TextField(blank=True)
     membership = models.CharField(max_length=1, choices=MEMBERSHIP_CHOICES, default=MEMBERSHIP_BRONZE,null=True,blank=True)
     
     #auth: create user profile
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='store')
     def __str__(self):
         return self.store_name
     class Meta:
@@ -204,8 +217,8 @@ class CartItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveSmallIntegerField()
     # to make sure that there is no duplicate records for the same product in the same cart
-    class Meta:
-        unique_together =[['cart','product']]
+    # class Meta:
+    #     unique_together =[['cart','product']]
 
 class Slide(models.Model):
     slide_image = models.ImageField(upload_to='store/slide')
@@ -213,11 +226,13 @@ class Slide(models.Model):
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
     name = models.CharField(max_length=255)
+    note = models.SmallIntegerField(default=1, validators=[MinValueValidator(1)] )    
     description = models.TextField()
     date = models.DateField(auto_now_add=True)
 
 class StoreReview(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='reviews')
     name = models.CharField(max_length=255)
+    note = models.SmallIntegerField(default=1, validators=[MinValueValidator(1)] )    
     description = models.TextField()
     date = models.DateField(auto_now_add=True)

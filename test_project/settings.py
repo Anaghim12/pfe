@@ -25,8 +25,19 @@ SECRET_KEY = 'django-insecure-5(5!b#c7rm1um1owf2(y%g*e#2s97gn&)ek2#4-^7%vg1@-8h+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '057e-197-244-109-33.ngrok.io',
+    '127.0.0.1',
+    'localhost',
+]
 
+CORS_ORIGIN_WHITELIST = [
+     'http://localhost:3000'
+]
+CORS_ALLOWED_ORIGINS=[]
+CORS_ORIGIN_ALLOW_ALL= True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS= True
 
 # Application definition
 
@@ -38,16 +49,21 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_filters',
+    'corsheaders',
     'rest_framework',
-    'rest_framework.authtoken',
     'djoser',
+    'social_django',
+    'rest_framework_simplejwt',
+    # 'rest_framework_simplejwt.token_blacklist',
+    'rest_framework.authtoken', #voir  
     "debug_toolbar",
     'store',
     'core',
     'tags',
 ]
 
-MIDDLEWARE = [
+MIDDLEWARE = [  
+    'social_django.middleware.SocialAuthExceptionMiddleware',
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -56,7 +72,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 INTERNAL_IPS = [
@@ -70,7 +86,7 @@ ROOT_URLCONF = 'test_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR)],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -78,10 +94,18 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect'
             ],
         },
     },
 ]
+#for Gmail
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',
+    'social_core.backends.facebook.FacebookOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
 
 WSGI_APPLICATION = 'test_project.wsgi.application'
 
@@ -100,6 +124,17 @@ DATABASES={
    }
 }
 
+#EMAIL
+#email account:bensouissimolka703@gmail.com
+#app password:clxqarlnfhabqzqf
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'bensouissimolka703@gmail.com'
+EMAIL_HOST_PASSWORD = 'clxqarlnfhabqzqf'
+EMAIL_USE_TLS = True
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -110,12 +145,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
 
@@ -145,27 +174,57 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 TEMPLATE_DIRS=(os.path.join(BASE_DIR, 'templates'),)
 
 REST_FRAMEWORK = {
+    #to said that the default auth system is JWT
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
     #this is for pagination
     # this is for filtering
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
-    #globally permissions 
-    # 'DEFAULT_AUTHENTICATION_CLASSES': (
-    #     'rest_framework_simplejwt.authentication.JWTAuthentication',
-    # ),
 }
 #specifiy the prefix included in our headers: specify the prefix 'JWT' included in the request headers
 
 AUTH_USER_MODEL = 'core.User'
 # to add our custom serializer(we want to add some fields when registering a user to the built in seralizer of djoser)
 DJOSER = {
+    # we set these to have the possiblility to reset an email+pwd+acctivate an account+make the url we receive in the mails we receive 
+    'LOGIN_FIELD':'email',
+    'USER_CREATE_PASSWORD_RETYPE':True,
+    'USERNAME_CHANGED_EMAIL_CONFIRMATION':True,
+    'PASSWORD_CHANGED_EMAIL_CONFIRMATION':True,
+    'SEND_CONFIRMATION_EMAIL':True,
+    'SET_USERNAME_RETYPE':True,
+    'SET_PASSWORD_RETYPE':True,
+    'PASSWORD_RESET_CONFIRM_URL':'password/reset/confirm/{uid}/{token}',
+    'USERNAME_RESET_CONFIRM_URL':'email/reset/confirm/{uid}/{token}',
+    'ACTIVATION_URL':'activate/{uid}/{token}',
+    'SEND_ACTIVATION_EMAIL':True,
+    #for Gmail+FB connection
+    'SOCIAL_AUTH_TOKEN_STRATEGY': 'djoser.social.token.jwt.TokenStrategy',
+    'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': ['http://localhost:8000/google', 'http://localhost:8000/facebook'],
+
     'SERIALIZERS':{
         'user_create':'core.serializers.UserCreateSerializer',
         'current_user':'core.serializers.UserSerializer',
-
+        'user':'core.serializers.UserCreateSerializer',
+        'user_delete': 'djoser.serializers.UserDeleteSerializer',
     }
 }
 #pour augmanter le temps de validiter de acces token
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('JWT',),
     'ACCESS_TOKEN_LIFETIME': timedelta(days=10)
+}
+
+#this is to log in /register with Gmail
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '839765700832-rbj754rhs7jnod812eebqm29urgoikpp.apps.googleusercontent.com'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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' 
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile', 'openid']
+SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
+# log in /register with FB
+SOCIAL_AUTH_FACEBOOK_KEY = '921010421904099'
+SOCIAL_AUTH_FACEBOOK_SECRET = '5c3a0a441a91a90d78fd8abaa4b994af'
+SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
+SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
+    'fields': 'email, first_name, last_name'
 }

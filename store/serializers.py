@@ -1,10 +1,12 @@
+from audioop import reverse
 from dataclasses import fields
 from django.db import transaction
 from rest_framework import serializers
 #pour convertir en decimal a number
 from decimal import Decimal
 from .models import *
-
+from .signals import order_created
+from rest_framework.reverse import reverse
 #storeimageserializer
 class StoreImageSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
@@ -24,9 +26,16 @@ class ProductImageSerializer(serializers.ModelSerializer):
 #productSerializer
 class ProductSerializer(serializers.ModelSerializer):
     images =ProductImageSerializer(many=True, read_only=True) 
+    # url = serializers.SerializerMethodField(read_only=True)
+    # def get_url(self,obj):
+    #     request= self.context.get('request')
+    #     if request is None:
+    #         return None
+    #     return reverse("product_list",kwargs={"pk":obj.pk}, request = request)
     class Meta:
         model =Product
-        fields =['id','title','unit_price','collection','price_with_tax','inventory','slug','description','images']
+        fields =['id','title','get_absolute_url','store','unit_price','store_price','promotion','characteristic','collection','sub_collection','price_with_tax','inventory','description','images']
+
     # id = serializers.IntegerField()
     # title = serializers.CharField(max_length=255)
     # unit_price = serializers.DecimalField(max_digits=6, decimal_places=2)
@@ -39,11 +48,11 @@ class ProductSerializer(serializers.ModelSerializer):
           return product.unit_price * Decimal(1.1)
     
 class CustomerSerializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField(read_only=True)
+    user_id = serializers.IntegerField()
 
     class Meta:
         model = Customer
-        fields = ['id', 'user_id', 'phone', 'birth_date', 'membership']  
+        fields = ['id', 'user_id', 'phone1','phone2', 'birth_date','zipcode','street','city']  
 #'user_id 'is created dynamically at run time
 #product simple object (pour minimiser les fields)
     
@@ -72,7 +81,7 @@ class AddProdWishListSerializer(serializers.ModelSerializer):
 
 #cartitem(Create a new item)#on le définit car on a besoin pour ce faire : product_id à ajouter
 class AddCartItemSerializer(serializers.ModelSerializer):
-    # we define this because it is dynamically created
+    # we define this because it is dynamically created ( it is created a run time)
     product_id =serializers.IntegerField()
 
     class Meta:
@@ -158,10 +167,10 @@ class CreateOrderSerializer(serializers.Serializer):
     def validate_cart_id(self,cart_id):
         # if the cart_id given is not found in DB
         if not Cart.objects.filter(pk=cart_id).exists():
-            raise serializers.ValidationError('no cart with the given ID was found.')
+            raise serializers.ValidationError('Cette carte id est introuvable!!')
         # if the cart_id given is empty (no reason to create an empty order)
         if CartItem.objects.filter(cart_id=cart_id).count()==0:
-            raise serializers.ValidationError('The cart is empty.')
+            raise serializers.ValidationError('La carte est vide!!')
         return cart_id
 
     def save(self, **kwargs):
@@ -174,6 +183,21 @@ class CreateOrderSerializer(serializers.Serializer):
             order = Order.objects.create(customer=customer)
             # to get all the cart items of the cart_id 
             cart_items = CartItem.objects.filter(cart_id=self.validated_data['cart_id'])
+            #print(customer)# anaghim ben souissi
+            #print(customer.order_count)#none
+            order_count=customer.order_count +1
+            #print(order_count)
+            # print(order_count)
+            if order_count<500:
+                membership="B"
+            elif order_count>500:
+                membership="S"
+            else:
+                membership="G"
+            
+            Customer.objects.filter(user=customer.user).update(order_count=order_count,membership=membership)
+            #print(customer.order_count)
+            # customer.update(membership=membership)
             # we creating a list of order_items
             order_items =[
                 OrderItem(
@@ -183,10 +207,24 @@ class CreateOrderSerializer(serializers.Serializer):
                     quantity= item.quantity
                 )for item in cart_items
             ]
+            print(order_items)
+            print(order_items[0].product.store)#anaghim 's store
+            print(order_items[0].product.store.user)# anaghimbensouissi@gmail.com
+            for item in order_items:
+                store=item.product.store
+                order_count= store.order_count + 1
+                if order_count<5000:
+                    membership = "B"
+                elif order_count<200000:
+                    membership ="S"
+                else: membership="G"
+                Store.objects.filter(user= store.user).update(order_count=order_count,membership=membership)
+
             # we are saving all of our orderItems all in once thanks to bluk
             OrderItem.objects.bulk_create(order_items)
             # delete the shopping cart
-            Cart.objects.filter(pk=self._validated_data['cart_id']).delete()
+            Cart.objects.filter(pk=self.validated_data['cart_id']).delete()
+            order_created.send_robust(self.__class__,order=order)
             # we return an object (order) from this serializer
             return order
 class UpdateOrderSerializer(serializers.ModelSerializer):
@@ -238,9 +276,10 @@ class CollectionSerializer(serializers.ModelSerializer):
         fields =['id','title','is_active','SubCollections']
 #subcategoriesSerializer
 class SubCollectionSerializer(serializers.ModelSerializer):
+    products =SimpleProductSerializer(many=True, read_only=True) 
     class Meta:
         model = SubCollection
-        fields =['id','title']
+        fields =['id','title','products']
 class ListSubCollectionSerializer(serializers.ModelSerializer):
     products =SimpleProductSerializer(many=True, read_only=True) 
     class Meta:

@@ -1,22 +1,12 @@
 from django.urls import path
 from . import views
-#viewsets
-from rest_framework.routers import SimpleRouter
-from pprint import pprint
-
-#implémentation with viewsets
-# router =SimpleRouter()
-# router.register('products',views.ProductViewSet)
-# router.register('collections',views.CollectionViewSet)
-# pprint(router.urls)
-
 
 # M1: implémentation with function based views voir ce qui est commentées + M2 : implémentation with class based views non pas commentées
 urlpatterns =[
     # path('products/',views.product_list),
-    path('products/',views.ProductList.as_view()),
+    path('products/',views.ProductList.as_view(),name="product_list"),
     path('products/add/',views.ProductCreate.as_view()),
-    path('products/<int:pk>',views.ProductRetreive.as_view()),
+    path('products/<int:pk>',views.ProductRetreive.as_view(),name='product-detail'),
     path('products/destroy/<int:pk>',views.ProductDestroy.as_view()),
     path('products/update/<int:pk>',views.ProductUpdate.as_view()),     
     # path('collections/<int:pk>',views.collection_detail, name='collection_detail'),
@@ -25,16 +15,18 @@ urlpatterns =[
     path('collections/<int:pk>',views.CollectionRetreive.as_view()),
     path('collections/destroy/<int:pk>',views.CollectionDestroy.as_view()),
     path('collections/update/<int:pk>',views.CollectionUpdate.as_view()), 
-    #auth by sorra's method (not complete)
-    path('customers/',views.CustomerCreateViewSet.as_view()),
-    path('customers/<int:pk>',views.CustomerRetreiveUpdateViewSet.as_view()),
-    #auth to get the current user(authorized)Get +Put
+    # manage subcollection
+    path('subcollections/add/',views.SubCollectionCreate.as_view()),
+    path('subcollections/<int:pk>',views.SubCollectionRetreive.as_view()),
+    path('subcollections/update/<int:pk>',views.SubCollectionUpdate.as_view()), 
+    #auth to get the current user profile(authorized)Get +Put
     path('customers/me',views.CustomerCurrent),
     #manage user 
     path('users/',views.CustomerList.as_view()),
     path('users/add/',views.CustomerCreate.as_view()),
     path('users/<int:pk>',views.CustomerRetrieve.as_view()),
-    path('users/update/<int:pk>',views.CustomerUpdate.as_view()),  
+    path('users/update/<int:pk>',views.CustomerUpdate.as_view()),
+    path('users/destroy/<int:pk>',views.CustomerDestroy.as_view()),  
     # manage product images
     path('products/<int:product_pk>/images/add',views.ProductImageCreateViewSet.as_view()),
     path('products/<int:product_pk>/images/update/<int:pk>',views.ProductImageUpdateViewSet.as_view()),
@@ -73,7 +65,7 @@ urlpatterns =[
     path('stores/reviews/',views.StoreListViewSet.as_view()),
     path('stores/<int:store_pk>/reviews/destroy/<int:pk>',views.StoreDestroyViewSet.as_view()),
     #search and filters 
-    path('products/search',views.search),
+    path('products/search/',views.SearchProduct.as_view()),
     #manage productWishList
     path('wishprod/add',views.ProdWishListCreateViewSet.as_view()),
     path('wishprod/',views.ProdWishListListViewSet.as_view()),
@@ -95,7 +87,7 @@ urlpatterns =[
     path('wishstore/items/<pk>/update',views.StoreItemWishListUpdateViewSet.as_view()),
     path('wishstore/items/',views.StoreItemWishListListViewSet.as_view()),
     path('wishstore/items/add',views.StoreItemWishListCreateViewSet.as_view()),
-    #manage the store
+    #manage store
     path('stores/',views.StoreList.as_view()),
     path('stores/add/',views.StoreCreate.as_view()),
     path('stores/<int:pk>',views.StoreRetreive.as_view()),
@@ -107,7 +99,8 @@ urlpatterns =[
     #path('stores/<int:store_pk>/images/<int:pk>',views.StoreImageRetrieveViewSet.as_view()),
     path('stores/<int:store_pk>/images/',views.StoreImageListViewSet),#problème ici
     path('stores/<int:store_pk>/images/destroy/<int:pk>',views.StoreDestroy.as_view()),
-    
+    # le vendeur peut voir ces produits
+    path('myproducts/',views.MyProductList.as_view())
 
 
 
