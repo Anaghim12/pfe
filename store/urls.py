@@ -23,7 +23,7 @@ urlpatterns =[
     path('customers/me',views.CustomerCurrent),
     #manage user 
     path('users/',views.CustomerList.as_view()),
-    path('users/add/',views.CustomerCreate.as_view()),
+    # path('users/add/',views.CustomerCreate.as_view()),
     path('users/<int:pk>',views.CustomerRetrieve.as_view()),
     path('users/update/<int:pk>',views.CustomerUpdate.as_view()),
     path('users/destroy/<int:pk>',views.CustomerDestroy.as_view()),  
@@ -31,7 +31,7 @@ urlpatterns =[
     path('products/<int:product_pk>/images/add',views.ProductImageCreateViewSet.as_view()),
     path('products/<int:product_pk>/images/update/<int:pk>',views.ProductImageUpdateViewSet.as_view()),
     path('products/<int:product_pk>/images/<int:pk>',views.ProductImageRetrieveViewSet.as_view()),
-    path('products/<int:product_pk>/images/',views.ProductImageListViewSet),#problème ici
+    # path('products/<int:product_pk>/images/',views.ProductImageListViewSet),#problème ici
     path('products/<int:product_pk>/images/destroy/<int:pk>',views.ProductImageDestroyViewSet.as_view()),
     #manage cart
     path('carts/add',views.CartCreateViewSet.as_view()),
@@ -89,7 +89,7 @@ urlpatterns =[
     path('wishstore/items/add',views.StoreItemWishListCreateViewSet.as_view()),
     #manage store
     path('stores/',views.StoreList.as_view()),
-    path('stores/add/',views.StoreCreate.as_view()),
+    # path('stores/add/',views.StoreCreate.as_view()),
     path('stores/<int:pk>',views.StoreRetreive.as_view()),
     path('stores/destroy/<int:pk>',views.StoreDestroy.as_view()),
     path('stores/update/<int:pk>',views.StoreUpdate.as_view()),     
@@ -100,9 +100,14 @@ urlpatterns =[
     path('stores/<int:store_pk>/images/',views.StoreImageListViewSet),#problème ici
     path('stores/<int:store_pk>/images/destroy/<int:pk>',views.StoreDestroy.as_view()),
     # le vendeur peut voir ces produits
-    path('myproducts/',views.MyProductList.as_view())
+    path('myproducts/',views.MyProductList.as_view()),
 
-
+    # manage Aprod
+    path('products/<int:product_pk>/aprod/add',views.AprodCreateViewSet.as_view()),
+    path('products/<int:product_pk>/aprod/update/<int:pk>',views.AprodUpdateViewSet.as_view()),
+    path('products/<int:product_pk>/aprod/<int:pk>',views.AprodRetreiveViewSet.as_view()),
+    path('products/<int:product_pk>/aprod/',views.AprodListViewSet.as_view()),
+    path('products/<int:product_pk>/aprod/destroy/<int:pk>',views.AprodDestroyViewSet.as_view()),
 
 
 

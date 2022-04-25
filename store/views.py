@@ -20,6 +20,43 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 #searching
 from rest_framework.filters import SearchFilter , OrderingFilter
+#manage Aprod
+class AprodCreateViewSet(generics.CreateAPIView):
+    permission_classes = [VendeurOrAdmin]
+    serializer_class = AprodSerializer
+    def get_serializer_context(self):
+        return {'product_id':self.kwargs['product_pk']}
+    def get_queryset(self):
+        return Aprod.objects.filter(product_id= self.kwargs['product_pk'])
+class AprodUpdateViewSet(generics.UpdateAPIView):
+    permission_classes = [VendeurOrAdmin]
+    serializer_class = AprodSerializer
+    def get_serializer_context(self):
+        return {'product_id':self.kwargs['product_pk']}
+    def get_queryset(self):
+        return Aprod.objects.filter(product_id= self.kwargs['product_pk'])
+class AprodRetreiveViewSet(generics.RetrieveAPIView):
+    permission_classes = [VendeurOrAdmin]
+    serializer_class = AprodSerializer
+    def get_serializer_context(self):
+        return {'product_id':self.kwargs['product_pk']}
+    def get_queryset(self):
+        return Aprod.objects.filter(product_id= self.kwargs['product_pk'])
+class AprodListViewSet(generics.ListAPIView):
+    permission_classes = [VendeurOrAdmin]
+    serializer_class = AprodSerializer
+    def get_serializer_context(self):
+        return {'product_id':self.kwargs['product_pk']}
+    def get_queryset(self):
+        return Aprod.objects.filter(product_id= self.kwargs['product_pk'])
+        
+class AprodDestroyViewSet(generics.DestroyAPIView):
+    permission_classes = [VendeurOrAdmin]
+    serializer_class = AprodSerializer
+    def get_serializer_context(self):
+        return {'product_id':self.kwargs['product_pk']}
+    def get_queryset(self):
+        return Aprod.objects.filter(product_id= self.kwargs['product_pk'])       
 #Manage store Images
 class StoreImageCreateViewSet(generics.CreateAPIView):
     permission_classes = [VendeurOrReadOnly]
@@ -68,24 +105,28 @@ class StoreCreate(generics.CreateAPIView):
 class StoreList(generics.ListAPIView):
     queryset=Store.objects.prefetch_related('StoreImage').all()
     serializer_class =StoreSerializer
+    
+
 
     pagination_class =DefaultPagination
 class StoreRetreive(generics.RetrieveAPIView):
     queryset=Store.objects.prefetch_related('StoreImage').all()
     serializer_class =StoreSerializer
-    permission_classes = [IsAuthenticated]
+  
 
 class StoreUpdate(generics.UpdateAPIView):
     queryset=Store.objects.all()
-    serializer_class =StoreSerializer
-    permission_classes = [VendeurOwnerStoreOrReadOnly]
+    serializer_class =UpdateStoreSerializer
+    # permission_classes = [IsAdminUser]
+    def get_serializer_context(self):
+        return {'user':self.request.user}
 
 class StoreDestroy(generics.DestroyAPIView):
     queryset=Store.objects.all()
     serializer_class =StoreSerializer
     permission_classes = [IsAdminUser,VendeurOwnerStoreOrReadOnly]
 
-#manage prodwishList
+#manage storewishList
 class StoreWishListListViewSet(generics.ListAPIView):
     serializer_class = StoreWishListSerializer
     permission_classes = [IsAuthenticated]
@@ -132,8 +173,8 @@ class StoreItemWishListListViewSet(generics.ListAPIView):
 class StoreItemWishListCreateViewSet(generics.CreateAPIView):
     serializer_class = AddStoreItemWishListSerializer
     permission_classes = [IsAuthenticated]
-    # def get_serializer_context(self):
-    #     return {'user_id':self.request.user}
+    def get_serializer_context(self):
+        return {'user':self.request.user}
     queryset= StoreItemWishList.objects.all()
 
 class StoreItemWishListDestroyViewSet(generics.DestroyAPIView):
@@ -182,8 +223,8 @@ class ProdItemWishListDestroyViewSet(generics.DestroyAPIView):
 class ProdItemWishListUpdateViewSet(generics.UpdateAPIView):
     serializer_class = AddprodItemWishListSerializer
     permission_classes = [IsAuthenticated]
-    # def get_serializer_context(self):
-    #     return {'user':self.request.user}
+    def get_serializer_context(self):
+        return {'user':self.request.user}
     def get_queryset(self):
         user= self.request.user
         if user.is_staff:
@@ -333,7 +374,7 @@ class SlideDestroyViewSet(generics.DestroyAPIView):
     permission_classes = [IsAdminUser]
     queryset = Slide.objects.all()
 
-#Manage Orders
+#manage order
 class OrderCreateViewSet(generics.CreateAPIView):
     serializer_class = CreateOrderSerializer
     permission_classes = [ClientOwnAProfile]
@@ -382,7 +423,7 @@ class OrderUpdateViewSet(generics.UpdateAPIView):
     serializer_class = UpdateOrderSerializer
     permission_classes = [IsAuthenticated]
     queryset = Order.objects.all()
-#Manage cartitem
+#manage cartitem
 class ItemCartUpdateViewSet(generics.UpdateAPIView):
     serializer_class = CartItemSerializer
     def get_queryset(self):
@@ -462,7 +503,7 @@ class ProductImageDestroyViewSet(generics.DestroyAPIView):
 class ProductCreate(generics.CreateAPIView):
     queryset=Product.objects.all()
     serializer_class =ProductSerializer
-    permission_classes =[VendeurOrReadOnly,IsAdminUser]
+    # permission_classes =[VendeurOrReadOnly,IsAdminUser]
 class MyProductList(generics.ListAPIView):
     serializer_class =ProductSerializer
     def get_queryset(self):
@@ -471,35 +512,39 @@ class MyProductList(generics.ListAPIView):
     
 
 class ProductList(generics.ListAPIView):
-    queryset=Product.objects.prefetch_related('images').all()
+    queryset=Product.objects.filter(is_active=True).prefetch_related('images').all()
     serializer_class =ProductSerializer
     filter_backends  =[DjangoFilterBackend,SearchFilter,OrderingFilter]
     filterset_class = ProductFilter
-    pagination_class = DefaultPagination
-    search_fields = ['title','description']
-    ordering_fields =['unit_price','last_update']
+    # pagination_class = DefaultPagination
+    #search_fields = ['title','description']
+    ordering_fields =['unit_price']
     pagination_class =DefaultPagination
 class ProductRetreive(generics.RetrieveAPIView):
-    queryset=Product.objects.prefetch_related('images').all()
+    queryset=Product.objects.prefetch_related('images').prefetch_related('reviews').all()
     serializer_class =ProductSerializer
 class ProductUpdate(generics.UpdateAPIView):
     queryset=Product.objects.all()
     serializer_class =ProductSerializer
     permission_classes =[VendeurOwnerStoreOrReadOnly,IsAdminUser]
-
 class ProductDestroy(generics.DestroyAPIView):
     queryset=Product.objects.all()
-    permission_classes =[VendeurOwnerStoreOrReadOnly,IsAdminUser]
     serializer_class =ProductSerializer
-    def delete(self,request,pk):
-        product = get_object_or_404(Product, pk=pk) # to get the product
-        if product.orderitems.count() > 0:# par défaut orderitem_set # if there is any order items associated with this product (sinon kan manhotich heda el code tjini erreur 5atir el product is Protected fil orderItem class fil model)
-            return Response({'error': 'Product cannot be deleted because it is associated with an order item.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        product.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-#SubCategory CRUD
+    permission_classes =[VendeurOwnerStoreOrReadOnly,IsAdminUser]
+
+# class ProductDestroy(generics.DestroyAPIView):
+#     queryset=Product.objects.all()
+#     permission_classes =[VendeurOwnerStoreOrReadOnly,IsAdminUser]
+#     serializer_class =ProductSerializer
+#     def delete(self,request,pk):
+#         product = get_object_or_404(Product, pk=pk) # to get the product
+#         if product.orderitems.count() > 0:# par défaut orderitem_set # if there is any order items associated with this product (sinon kan manhotich heda el code tjini erreur 5atir el product is Protected fil orderItem class fil model)
+#             return Response({'error': 'Product cannot be deleted because it is associated with an order item.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+#         product.delete()
+#         return Response(status=status.HTTP_204_NO_CONTENT)
+#manage subcategory 
 class SubCollectionCreate(generics.CreateAPIView):
-    queryset=Collection.objects.all()
+    queryset=SubCollection.objects.all()
     serializer_class =SubCollectionSerializer
     permission_classes =[IsAminOrReadOnly]
 class SubCollectionRetreive(generics.RetrieveAPIView):
@@ -512,7 +557,7 @@ class SubCollectionUpdate(generics.UpdateAPIView):
     queryset=Collection.objects.all()
     serializer_class =SubCollectionSerializer
     permission_classes =[IsAminOrReadOnly]
-#Category CRUD
+#manage category 
 class CollectionCreate(generics.CreateAPIView):
     queryset=Collection.objects.all()
     serializer_class =CollectionSerializer
@@ -563,12 +608,8 @@ class CollectionDestroy(generics.DestroyAPIView):
 #         print(serializer.validated_data)
 #         serializer.save() #save the object in the database
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-#Auth CRUD
+# manage customer
 class CustomerCreate(generics.CreateAPIView):
-    queryset = Customer.objects.all()
-    serializer_class = CustomerSerializer
-    # permission_classes=[IsAdminUser]
-class CustomerRetrieve(generics.RetrieveAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     permission_classes=[IsAdminUser]
@@ -576,14 +617,26 @@ class CustomerList(generics.ListAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     permission_classes=[IsAdminUser]
-class CustomerUpdate(generics.UpdateAPIView):
-    serializer_class = CustomerSerializer
+class CustomerRetrieve(generics.RetrieveAPIView):
+    serializer_class = UpdateCustomerSerializer
     permission_classes=[IsAuthenticated]
     def get_queryset(self):
         user= self.request.user
         if user.is_staff:
             return Customer.objects.all()
         return Customer.objects.all(user=user)
+    def get_serializer_context(self):
+        return {'user':self.request.user}
+class CustomerUpdate(generics.UpdateAPIView):
+    serializer_class = UpdateCustomerSerializer
+    permission_classes=[IsAuthenticated]
+    def get_queryset(self):
+        user= self.request.user
+        if user.is_staff:
+            return Customer.objects.all()
+        return Customer.objects.all(user=user)
+    def get_serializer_context(self):
+        return {'user':self.request.user}
 class CustomerDestroy(generics.DestroyAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer

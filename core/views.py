@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from .models import User
 from django.shortcuts import render
-from .serializers import UserCreateSerializer
+# from .serializers import UserCreateSerializer
 # Create your views here.
 #test front
 @api_view(['POST'])

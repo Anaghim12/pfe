@@ -35,7 +35,14 @@ class SubCollection(models.Model):
     
     class Meta:
         ordering=['title']
-
+class Aprod(models.Model):
+    slug = models.SlugField(blank=True,null=True)
+    inventory = models.IntegerField(default=1,blank=False,null=False)
+    color = models.CharField(max_length=25,blank=False,null=False)
+    size = models.PositiveSmallIntegerField(default=38,blank=False,null=False)
+    product=models.ForeignKey('Product',on_delete=models.CASCADE,related_name='a_prod')
+    def __str__(self):
+        return self.slug
 class Product(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(blank=True,null=True)
@@ -48,6 +55,7 @@ class Product(models.Model):
     # promotions = models.ManyToManyField(Promotion,blank=True)
     promotion= models.PositiveSmallIntegerField(default=0)
     characteristic = models.TextField() # les caractérique du produit comming from front "assurer le dynamisme"
+    material = models.CharField(default='coton',max_length=25)
     store = models.ForeignKey('Store',on_delete=models.CASCADE,related_name='products',default=4)
     is_active =models.BooleanField(default=True)
     sub_collection = models.ForeignKey('SubCollection',on_delete=models.CASCADE,related_name='products',default=1)
@@ -124,15 +132,17 @@ class Customer(models.Model):
         (MEMBERSHIP_SILVER, 'Silver'),
         (MEMBERSHIP_GOLD, 'Gold'),
     ]
-    photo =  models.ImageField(upload_to='store/customer/photo',blank=True)
+    photo =  models.ImageField(upload_to='store/customer/photo',blank=True,null=True)
     phone1 = models.CharField(max_length=255,blank=False)
-    phone2 = models.CharField(max_length=255,blank=True)
+    phone2 = models.CharField(max_length=255,blank=True,null=True)
     birth_date = models.DateField(null=True,blank=True)
     zipcode = models.CharField(max_length=100,blank=False,default='no post_code')
     street = models.CharField(max_length=255,blank=False,default='no street')
     city = models.CharField(max_length=255,blank=False,default='no city')
     #auth: create user profile
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customer')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, primary_key=True,on_delete=models.CASCADE, related_name='customer')
+    # user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customer')
+
     # à gérer back selon des conditions
     membership = models.CharField(
         max_length=1, choices=MEMBERSHIP_CHOICES, default=MEMBERSHIP_BRONZE)
@@ -151,6 +161,7 @@ class Customer(models.Model):
     class Meta:
         ordering=['user__first_name','user__last_name']
 class Store(models.Model):
+    
     MEMBERSHIP_BRONZE = 'B'
     MEMBERSHIP_SILVER = 'S'
     MEMBERSHIP_GOLD = 'G'
@@ -162,18 +173,20 @@ class Store(models.Model):
     ]
     store_name= models.CharField(max_length=255,blank=False)
     order_count =models.BigIntegerField(default=0,blank=True,null=True)
-    description= models.TextField()
-    brand = models.TextField(blank=True)
+    description= models.TextField(blank=True,null=True)
+    brand = models.TextField(blank=True,null=True)
     membership = models.CharField(max_length=1, choices=MEMBERSHIP_CHOICES, default=MEMBERSHIP_BRONZE,null=True,blank=True)
     
     #auth: create user profile
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='store')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, primary_key=True,on_delete=models.CASCADE, related_name='store')
+    # user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='store')
+
     def __str__(self):
         return self.store_name
     class Meta:
         ordering=['store_name']
 class StoreImage(models.Model):
-    brand_image = models.ImageField(upload_to='store/brand')
+    #brand_image = models.ImageField(upload_to='store/brand')
     store_image = models.ImageField(upload_to='store/storee')
     store = models.ForeignKey(Store, on_delete=models.CASCADE,related_name='StoreImage')
 class Order(models.Model):

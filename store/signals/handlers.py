@@ -7,9 +7,10 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from store.models import Customer, Store
 from store.signals import order_created
-from store.models import OrderItem , Product, Collection , SubCollection
+from store.models import OrderItem , Product, Collection , SubCollection,ProdWishList,StoreWishList, Cart, Aprod
 from django.utils.text import slugify
-from test_project.utils import unique_slug_generator
+from test_project.utils import *
+from uuid import uuid4
 
 # 
 from django .template.loader import render_to_string
@@ -22,18 +23,37 @@ def create_customer_for_new_user(sender, **kwargs):
         user=kwargs['instance']
         print(user.type) #2
         # print(user.type.role) #2
-        # print(user.type_id)#4
+        print(user.type_id)#4
+        # print(user.store.store_name)
+        
         store_name=user.first_name +' ' + user.last_name +' store'
         if user.type_id ==4 :
             Store.objects.create(user=kwargs['instance'],store_name=store_name)
-# on va automatiser la création d'un profil (mais en cas de passage d'un ordre par un client on doit protéger le route:orders/add  fil views.py pour obligé le client de terminer à remplir son profil avant de passé une commande  )
+            print(user.store)
+            print(user.store.store_name)
+            Customer.objects.create(user=user)
+
+# on va automatiser la création d'un profil (mais en cas de passage d'un ordre par un client on doit protéger le route:orders/add  fil views.py pour oblier le client de terminer à remplir son profil avant de faire passer une commande  )
 @receiver(post_save,sender=settings.AUTH_USER_MODEL)
 def create_customer_for_new_user(sender, **kwargs):
     if kwargs['created']:
         user=kwargs['instance']
-        Customer.objects.create(user=user)
+        print(user.type_id)
+        print(user.type)
+        if user.type_id == 3:
+            ProdWishList.objects.create(user=user)
+            StoreWishList.objects.create(user=user)
+            id = uuid4()
+            Cart.objects.create(id=id)
+            Customer.objects.create(user=user)
+
 
 #auto slug
+#auto slug
+@receiver(pre_save,sender=Aprod)
+def create_slug_field(instance,sender,*args, **kwargs):
+    if instance.slug is None :
+        instance.slug = aprod_unique_slug_generator(instance)
 @receiver(pre_save,sender=SubCollection)
 def create_slug_field(instance,sender,*args, **kwargs):
     if instance.slug is None :
@@ -62,8 +82,21 @@ def on_order_created(sender, **kwargs):
     title= 'Merci bien Mr/Mme ' + name
     order_items=OrderItem.objects.filter(order=order)
     # product=[]
-    # for item in order_items:
-    #     product.append(item.product.title)
+    print('this print is in the handlers')
+    for item in order_items:
+        id=item.product_id
+        print(item.product.description)
+        print(item.product.store)
+        user=item.product.store_id
+        print(user)
+        order_count= Store.objects.filter(user_id=user)
+        print('***********************')
+        for item in order_count:
+            print(item)
+        # order_count = order_count+1
+
+
+    #    product.append(item.product.title)
 
     # print(product)
     # product=[]

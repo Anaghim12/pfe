@@ -97,7 +97,9 @@ class StoreItemWishListAdmin(admin.ModelAdmin):
     autocomplete_fields = ['user','store']
     list_select_related =['user']
     search_fields = ['user']
-
+@admin.register(models.Aprod)
+class AprodAdmin(admin.ModelAdmin):
+    list_display = ['slug','inventory','product']
 
 @admin.register(models.Collection)
 class CollectionAdmin(admin.ModelAdmin):
