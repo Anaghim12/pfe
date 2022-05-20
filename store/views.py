@@ -1,3 +1,5 @@
+from ast import Is
+from unittest import result
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -17,33 +19,102 @@ from rest_framework.decorators import  permission_classes
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
 #this is for filtering
 from django_filters.rest_framework import DjangoFilterBackend
-
 #searching
 from rest_framework.filters import SearchFilter , OrderingFilter
+#
+#     elif request.method == 'POST':
+#         serializer = ProductSerializer(data=request.data) #deserialize de data existed in the body
+#         serializer.is_valid(raise_exception=True) # s'assurer qu'elle est valide le paramère passer c'est pour ne pas faire bloc: if else
+#         print(serializer.validated_data)
+#         serializer.save() #save the object in the database
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+#La création d'une version de produit selon la nature de collection ou de sous-collection
+# @api_view(['POST'])
+# def AprodCreateViewSet(request):
+#     id=Product.objects.get(id=request.data['id'])
+#     product=Product.objects.filter(id=id)
+#     if(product.collection_id in [10,7] or product.sub_collection_id in [41,44]):
+#         serializer = AprodSerializer(data=request.data,context={'request':request})
+#     else:
+#         serializer = AprodSizeSerializer(data=request.data,many=True,context={'request':request})
+#     serializer.is_valid(raise_exception=True)
+#     serializer.save()
+
+#Get les alertes pour les vendeurs
+class DisplayAlerte(generics.ListAPIView):
+    serializer_class= OrderMsgSerializer
+
+    def get_queryset(self):
+        store_id= self.request.user.id
+        # queryset=Product.objects.filter(store_id=store_id)
+        # My_prod_list=[]
+        # for prod in queryset:
+        #     My_prod_list.append(prod.)
+        # Store.objects.get(user=store_id)
+        # OrderItem.objects.filter(product_id=)
+        # order_item=OrderItem.objects.filter(store=store_id)
+        # for item in order_item:
+        #     if not item.msg =="aucune" :
+        #         print(item.msg)
+        return OrderItem.objects.filter(store=store_id).filter(msg__contains="est")
+#cart avant ajouter panier
+class ChoixProduit(generics.ListAPIView):
+    def get_serializer_class(self):
+        product_id=self.kwargs['product_pk']
+        product= Product.objects.get(id=product_id)
+        print(product)
+        print(product.collection_id)
+        if (product.collection_id in [10,7] or product.sub_collection_id in [41,44]):
+            return GetColorSerializer
+        return GetSizeSerializer
+    def get_queryset(self):
+        return Aprod.objects.filter(product_id= self.kwargs['product_pk'])
+
+@api_view(['POST'])
+def GetAprodIdBasedSize(request):
+    product_id=request.data['product_id']
+    size=request.data['size']
+    aprod=Aprod.objects.filter(product_id=product_id).filter(size=size)
+    serializer=GetColorSerializer(aprod,many=True, context={'request':request})
+    return Response(serializer.data)
+@api_view(['POST'])
+def GetDemandedSubCollection(request):
+    id=Collection.objects.get(id=request.data['id'])
+    queryset= SubCollection.objects.filter(collection=id)
+    serializer= SimpleSubCollectionSerializer(queryset, many =True, context={'request':request})
+    return Response(serializer.data)
+
+
+# demande retour produit
+class CreateDemandeRetour(generics.CreateAPIView):
+    permission_classes=[IsAuthenticated,ClientOwnAnOrder]
+    serializer_class=DemandeRetourSerializer
+    queryset=DemandeRetour.objects.all()
 #manage Aprod
 class AprodCreateViewSet(generics.CreateAPIView):
-    permission_classes = [VendeurOrAdmin]
+    permission_classes = [IsAuthenticated,VendeurOrAdmin]
     serializer_class = AprodSerializer
     def get_serializer_context(self):
         return {'product_id':self.kwargs['product_pk']}
     def get_queryset(self):
         return Aprod.objects.filter(product_id= self.kwargs['product_pk'])
 class AprodUpdateViewSet(generics.UpdateAPIView):
-    permission_classes = [VendeurOrAdmin]
-    serializer_class = AprodSerializer
+    permission_classes = [IsAuthenticated,VendeurOrAdmin]
+    serializer_class = UpdateAprodSerializer
     def get_serializer_context(self):
         return {'product_id':self.kwargs['product_pk']}
     def get_queryset(self):
         return Aprod.objects.filter(product_id= self.kwargs['product_pk'])
 class AprodRetreiveViewSet(generics.RetrieveAPIView):
-    permission_classes = [VendeurOrAdmin]
+    permission_classes = [IsAuthenticated,VendeurOrAdmin]
     serializer_class = AprodSerializer
     def get_serializer_context(self):
         return {'product_id':self.kwargs['product_pk']}
     def get_queryset(self):
         return Aprod.objects.filter(product_id= self.kwargs['product_pk'])
 class AprodListViewSet(generics.ListAPIView):
-    permission_classes = [VendeurOrAdmin]
+    permission_classes = [IsAuthenticated,VendeurOrAdmin]
     serializer_class = AprodSerializer
     def get_serializer_context(self):
         return {'product_id':self.kwargs['product_pk']}
@@ -51,15 +122,15 @@ class AprodListViewSet(generics.ListAPIView):
         return Aprod.objects.filter(product_id= self.kwargs['product_pk'])
         
 class AprodDestroyViewSet(generics.DestroyAPIView):
-    permission_classes = [VendeurOrAdmin]
+    permission_classes = [IsAuthenticated,VendeurOrAdmin]
     serializer_class = AprodSerializer
     def get_serializer_context(self):
         return {'product_id':self.kwargs['product_pk']}
     def get_queryset(self):
         return Aprod.objects.filter(product_id= self.kwargs['product_pk'])       
-#Manage store Images
+#manage store Images
 class StoreImageCreateViewSet(generics.CreateAPIView):
-    permission_classes = [VendeurOrReadOnly]
+    permission_classes = [IsAuthenticated,VendeurOrReadOnly]
     serializer_class = StoreImageSerializer
     def get_serializer_context(self):
         return {'store_id':self.kwargs['store_pk']}
@@ -67,7 +138,7 @@ class StoreImageCreateViewSet(generics.CreateAPIView):
         return StoreImage.objects.filter(store_id= self.kwargs['store_pk'])# to bring from the url the id of the product
 
 class StoreImageUpdateViewSet(generics.UpdateAPIView):
-    permission_classes = [VendeurOwnerStoreOrReadOnly]
+    permission_classes = [IsAuthenticated,VendeurOrReadOnly,VendeurOwnerStoreOrReadOnly]
     serializer_class = StoreImageSerializer
     def get_serializer_context(self):
         return {'store_id':self.kwargs['store_pk']}
@@ -90,7 +161,7 @@ class StoreImageListViewSet(generics.ListAPIView):
     def get_queryset(self):
         return StoreImage.objects.filter(store_id= self.kwargs['store_pk'])
 class StoreImageDestroyViewSet(generics.DestroyAPIView):
-    permission_classes = [VendeurOwnerStoreOrReadOnly]
+    permission_classes = [IsAuthenticated,VendeurOrReadOnly,VendeurOwnerStoreOrReadOnly]
     serializer_class = StoreImageSerializer
 
     def get_queryset(self):
@@ -100,7 +171,7 @@ class StoreImageDestroyViewSet(generics.DestroyAPIView):
 class StoreCreate(generics.CreateAPIView):
     queryset=Store.objects.all()
     serializer_class =StoreSerializer
-    permission_classes = [IsAdminUser,VendeurOrReadOnly]
+    permission_classes = [IsAuthenticated,IsAdminUser,VendeurOrReadOnly]
 
 class StoreList(generics.ListAPIView):
     queryset=Store.objects.prefetch_related('StoreImage').all()
@@ -117,14 +188,14 @@ class StoreRetreive(generics.RetrieveAPIView):
 class StoreUpdate(generics.UpdateAPIView):
     queryset=Store.objects.all()
     serializer_class =UpdateStoreSerializer
-    # permission_classes = [IsAdminUser]
+    # permission_classes = [IsAuthenticated,IsAdminUser]
     def get_serializer_context(self):
         return {'user':self.request.user}
 
 class StoreDestroy(generics.DestroyAPIView):
     queryset=Store.objects.all()
     serializer_class =StoreSerializer
-    permission_classes = [IsAdminUser,VendeurOwnerStoreOrReadOnly]
+    permission_classes = [IsAuthenticated,IsAdminUser,VendeurOrReadOnly,VendeurOwnerStoreOrReadOnly]
 
 #manage storewishList
 class StoreWishListListViewSet(generics.ListAPIView):
@@ -136,7 +207,7 @@ class StoreWishListListViewSet(generics.ListAPIView):
             return StoreWishList.objects.prefetch_related('store_item_wish__store').all()
         return StoreWishList.objects.prefetch_related('store_item_wish__store').filter(user=user)
 #normalement n'est important celle ci (pas la peine de l'implémenter)
-class StoreWishListRetreiveViewSet(generics.RetrieveAPIView):
+class StoreWishListRetreiveViewSet(generics.ListAPIView):
     serializer_class = StoreWishListSerializer
     permission_classes = [IsAuthenticated]
     def get_queryset(self):
@@ -148,11 +219,12 @@ class StoreWishListRetreiveViewSet(generics.RetrieveAPIView):
 class StoreWishListDestroyViewSet(generics.DestroyAPIView):
     serializer_class = StoreWishListSerializer
     permission_classes = [IsAuthenticated]
-    def get_queryset(self):
-        user= self.request.user
-        if user.is_staff:
-            return StoreWishList.objects.all()
-        return StoreWishList.objects.filter(user=user)
+    queryset= StoreWishList.objects.all()
+    # def get_queryset(self):
+    #     user= self.request.user
+    #     if user.is_staff:
+    #         return StoreWishList.objects.all()
+    #     return StoreWishList.objects.filter(user=user)
 
 class StoreWishListCreateViewSet(generics.CreateAPIView):
     serializer_class = StoreWishListSerializer
@@ -174,7 +246,7 @@ class StoreItemWishListCreateViewSet(generics.CreateAPIView):
     serializer_class = AddStoreItemWishListSerializer
     permission_classes = [IsAuthenticated]
     def get_serializer_context(self):
-        return {'user':self.request.user}
+        return {'user':self.request.user.id}
     queryset= StoreItemWishList.objects.all()
 
 class StoreItemWishListDestroyViewSet(generics.DestroyAPIView):
@@ -186,10 +258,13 @@ class StoreItemWishListDestroyViewSet(generics.DestroyAPIView):
             return StoreItemWishList.objects.all()
         return StoreItemWishList.objects.filter(user=user)
 class StoreItemWishListUpdateViewSet(generics.UpdateAPIView):
-    serializer_class = AddStoreItemWishListSerializer
+    serializer_class = UpdateStoreItemWishListSerializer
     permission_classes = [IsAuthenticated]
     def get_serializer_context(self):
-        return {'user':self.request.user}
+        # print(self.kwargs)
+        store_item_obj=StoreItemWishList.objects.get(id=self.kwargs['pk'])
+        print(store_item_obj.store_id)
+        return {'user':self.request.user.id}
     def get_queryset(self):
         user= self.request.user
         if user.is_staff:
@@ -208,8 +283,8 @@ class ProdItemWishListListViewSet(generics.ListAPIView):
 class ProdItemWishListCreateViewSet(generics.CreateAPIView):
     serializer_class = AddprodItemWishListSerializer
     permission_classes = [IsAuthenticated]
-    # def get_serializer_context(self):
-    #     return {'user_id':self.request.user}
+    def get_serializer_context(self):
+        return {'user':self.request.user.id}
     queryset= ProdItemWishList.objects.all()
 
 class ProdItemWishListDestroyViewSet(generics.DestroyAPIView):
@@ -221,10 +296,10 @@ class ProdItemWishListDestroyViewSet(generics.DestroyAPIView):
             return ProdItemWishList.objects.all()
         return ProdItemWishList.objects.filter(user=user)
 class ProdItemWishListUpdateViewSet(generics.UpdateAPIView):
-    serializer_class = AddprodItemWishListSerializer
+    serializer_class = UpdateprodItemWishListSerializer
     permission_classes = [IsAuthenticated]
     def get_serializer_context(self):
-        return {'user':self.request.user}
+        return {'user':self.request.user.id}
     def get_queryset(self):
         user= self.request.user
         if user.is_staff:
@@ -240,7 +315,7 @@ class ProdWishListListViewSet(generics.ListAPIView):
             return ProdWishList.objects.prefetch_related('prod_item_wish__products').all()
         return ProdWishList.objects.prefetch_related('prod_item_wish__products').filter(user=user)
 
-class ProdWishListRetreiveViewSet(generics.RetrieveAPIView):
+class ProdWishListRetreiveViewSet(generics.ListAPIView):
     serializer_class = ProdWishListSerializer
     permission_classes = [IsAuthenticated]
     def get_queryset(self):
@@ -361,7 +436,6 @@ class SlideCreateViewSet(generics.CreateAPIView):
 
 class SlideListViewSet(generics.ListAPIView):
     serializer_class = SlideSerializer
-    permission_classes = [IsAdminUser]
     queryset = Slide.objects.all()
 
 class SlideUpdateViewSet(generics.UpdateAPIView):
@@ -377,7 +451,7 @@ class SlideDestroyViewSet(generics.DestroyAPIView):
 #manage order
 class OrderCreateViewSet(generics.CreateAPIView):
     serializer_class = CreateOrderSerializer
-    permission_classes = [ClientOwnAProfile]
+    permission_classes = [IsAuthenticated,ClientOwnAProfile]
     def create(self, request, *args, **kwargs):
         # we use the first serializer (CreateOrderSerializer) to do the first part of the job (voir serializer)
         serializer = CreateOrderSerializer(
@@ -390,11 +464,9 @@ class OrderCreateViewSet(generics.CreateAPIView):
         # we use in here the second serializer pour afficher the order object created et non pas cart_id (qui existe fil CreateOrderSerializer)
         serializer = OrderSerializer(order)
         return Response(serializer.data)
-
-
 class OrderListViewSet(generics.ListAPIView):
     serializer_class = OrderSerializer
-    permission_classes = [ClientOwnAProfile]
+    permission_classes = [IsAuthenticated]
     def get_queryset(self):
         user = self.request.user
         # s'il s'agit d'un admin il va voir tous les orders
@@ -425,7 +497,10 @@ class OrderUpdateViewSet(generics.UpdateAPIView):
     queryset = Order.objects.all()
 #manage cartitem
 class ItemCartUpdateViewSet(generics.UpdateAPIView):
-    serializer_class = CartItemSerializer
+    serializer_class = CartItemUpdateSerializer
+    def get_serializer_context(self):
+        # print(self.kwargs['pk'])
+        return {'item_id':self.kwargs['pk']}
     def get_queryset(self):
         return CartItem.objects.filter(cart_id=self.kwargs['cart_pk']).select_related('product')
 
@@ -449,7 +524,7 @@ class ItemCartCreateViewSet(generics.CreateAPIView):
     def get_queryset(self):
         return CartItem.objects.filter(cart_id=self.kwargs['cart_pk'])
     
-#Manage Cart
+#manage Cart
 class CartCreateViewSet(generics.CreateAPIView):
     queryset = Cart.objects.prefetch_related('items__product').all()
     serializer_class = CartSerializer
@@ -461,7 +536,7 @@ class CartDestroyViewSet(generics.DestroyAPIView):
     serializer_class = CartSerializer
 #Manage Product Images
 class ProductImageCreateViewSet(generics.CreateAPIView):
-    permission_classes=[VendeurOwnerStoreOrReadOnly,IsAdminUser]
+    permission_classes=[IsAuthenticated,VendeurOrReadOnly,VendeurOwnerStoreOrReadOnly]
     serializer_class = ProductImageSerializer
     def get_serializer_context(self):
         return {'product_id':self.kwargs['product_pk']}
@@ -469,7 +544,7 @@ class ProductImageCreateViewSet(generics.CreateAPIView):
         return ProductImage.objects.filter(product_id= self.kwargs['product_pk'])# to bring from the url the id of the product
 
 class ProductImageUpdateViewSet(generics.UpdateAPIView):
-    permission_classes=[VendeurOwnerStoreOrReadOnly,IsAdminUser]
+    permission_classes=[IsAuthenticated,VendeurOrReadOnly,VendeurOwnerStoreOrReadOnly]
     serializer_class = ProductImageSerializer
     def get_serializer_context(self):
         return {'product_id':self.kwargs['product_pk']}
@@ -492,7 +567,7 @@ class ProductImageListViewSet(generics.ListAPIView):
     def get_queryset(self):
         return ProductImage.objects.filter(product_id= self.kwargs['product_pk'])
 class ProductImageDestroyViewSet(generics.DestroyAPIView):
-    permission_classes=[VendeurOwnerStoreOrReadOnly,IsAdminUser]
+    permission_classes=[IsAuthenticated,VendeurOrReadOnly,VendeurOwnerStoreOrReadOnly]
     serializer_class = ProductImageSerializer
 
     def get_queryset(self):
@@ -503,7 +578,7 @@ class ProductImageDestroyViewSet(generics.DestroyAPIView):
 class ProductCreate(generics.CreateAPIView):
     queryset=Product.objects.all()
     serializer_class =ProductSerializer
-    # permission_classes =[VendeurOrReadOnly,IsAdminUser]
+    permission_classes =[IsAuthenticated,VendeurOrAdmin]
 class MyProductList(generics.ListAPIView):
     serializer_class =ProductSerializer
     def get_queryset(self):
@@ -522,19 +597,19 @@ class ProductList(generics.ListAPIView):
     pagination_class =DefaultPagination
 class ProductRetreive(generics.RetrieveAPIView):
     queryset=Product.objects.prefetch_related('images').prefetch_related('reviews').all()
-    serializer_class =ProductSerializer
+    serializer_class =RetreiveProductSerializer
 class ProductUpdate(generics.UpdateAPIView):
     queryset=Product.objects.all()
     serializer_class =ProductSerializer
-    permission_classes =[VendeurOwnerStoreOrReadOnly,IsAdminUser]
+    permission_classes =[VendeurOrReadOnly,VendeurOwnerStoreOrReadOnly,IsAdminUser]
 class ProductDestroy(generics.DestroyAPIView):
     queryset=Product.objects.all()
     serializer_class =ProductSerializer
-    permission_classes =[VendeurOwnerStoreOrReadOnly,IsAdminUser]
+    permission_classes =[VendeurOrReadOnly,VendeurOwnerStoreOrReadOnly,IsAdminUser]
 
 # class ProductDestroy(generics.DestroyAPIView):
 #     queryset=Product.objects.all()
-#     permission_classes =[VendeurOwnerStoreOrReadOnly,IsAdminUser]
+#     permission_classes =[VendeurOrReadOnly,VendeurOwnerStoreOrReadOnly,IsAdminUser]
 #     serializer_class =ProductSerializer
 #     def delete(self,request,pk):
 #         product = get_object_or_404(Product, pk=pk) # to get the product
@@ -543,16 +618,29 @@ class ProductDestroy(generics.DestroyAPIView):
 #         product.delete()
 #         return Response(status=status.HTTP_204_NO_CONTENT)
 #manage subcategory 
+# class GetDemandedSubCollection(generics.ListAPIView):
+#     serializer_class =SimpleCollectionSerializer
+#     queryset=SubCollection.objects.all()
+    # def get_queryset(self):
+    #     return SubCollection.objects.filter(id=self.request.data['id'])
 class SubCollectionCreate(generics.CreateAPIView):
     queryset=SubCollection.objects.all()
     serializer_class =SubCollectionSerializer
     permission_classes =[IsAminOrReadOnly]
-class SubCollectionRetreive(generics.RetrieveAPIView):
-    serializer_class =ListSubCollectionSerializer
+class SubCollectionRetreive(generics.ListAPIView):
+    # queryset=SubCollection.objects.all()
+    serializer_class =SimpleProductSerializer
     permission_classes =[IsAminOrReadOnly]
+    filter_backends  =[DjangoFilterBackend,SearchFilter,OrderingFilter]
+    filterset_class = ProductFilter
+    ordering_fields =['unit_price']
     def get_queryset(self):
-        results= SubCollection.objects.filter(is_active=True)
-        return results
+        print(self.kwargs['pk'])
+        return Product.objects.filter(sub_collection_id= self.kwargs['pk']).filter(sub_collection__is_active=True)
+        # results= SubCollection.objects.filter(is_active=True)
+        # return results
+        
+
 class SubCollectionUpdate(generics.UpdateAPIView):
     queryset=Collection.objects.all()
     serializer_class =SubCollectionSerializer
@@ -609,14 +697,15 @@ class CollectionDestroy(generics.DestroyAPIView):
 #         serializer.save() #save the object in the database
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
 # manage customer
+
 class CustomerCreate(generics.CreateAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    permission_classes=[IsAdminUser]
+    permission_classes=[IsAuthenticated]
 class CustomerList(generics.ListAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    permission_classes=[IsAdminUser]
+    permission_classes=[IsAuthenticated]
 class CustomerRetrieve(generics.RetrieveAPIView):
     serializer_class = UpdateCustomerSerializer
     permission_classes=[IsAuthenticated]

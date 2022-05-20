@@ -5,13 +5,15 @@ from django.template.loader import render_to_string
 # from django.utils.html import strip_tags
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from store.models import Customer, Store
-from store.signals import order_created
+from store.models import Customer, DemandeRetour, Store
+from store.signals import order_created 
 from store.models import OrderItem , Product, Collection , SubCollection,ProdWishList,StoreWishList, Cart, Aprod
-from django.utils.text import slugify
+from rest_framework import serializers
 from test_project.utils import *
 from uuid import uuid4
-
+from rest_framework import generics
+from store.serializers import OrderMsgSerializer
+from store.models import Order
 # 
 from django .template.loader import render_to_string
 
@@ -26,7 +28,7 @@ def create_customer_for_new_user(sender, **kwargs):
         print(user.type_id)#4
         # print(user.store.store_name)
         
-        store_name=user.first_name +' ' + user.last_name +' store'
+        store_name=user.first_name +' ' + user.last_name +' Boutique'
         if user.type_id ==4 :
             Store.objects.create(user=kwargs['instance'],store_name=store_name)
             print(user.store)
@@ -46,7 +48,12 @@ def create_customer_for_new_user(sender, **kwargs):
             id = uuid4()
             Cart.objects.create(id=id)
             Customer.objects.create(user=user)
-
+#affichage the right product
+@receiver(post_save,sender=Aprod)
+def create_slug_field(instance,sender,*args, **kwargs):
+    prod_activation=instance.product.is_active
+    if prod_activation == False :
+        Product.objects.filter(id= instance.product_id).update(is_active=True)
 
 #auto slug
 #auto slug
@@ -66,9 +73,40 @@ def create_slug_field(instance,sender,*args, **kwargs):
     print('there is a slug')
 @receiver(pre_save,sender=Collection)
 def create_slug_field(instance,sender, **kwargs):
-    print('pre save')
     if instance.slug is None :
         instance.slug = unique_slug_generator(instance)
+#demande de retourd produit est créer
+@receiver(post_save,sender=DemandeRetour)
+def create_demande_retour_prod(sender,instance, **kwargs):
+    print('AVANT CONDITION')
+    print(kwargs)
+    mail=instance.user
+    if kwargs['created']==False:
+        print(instance.accept)
+        print(instance.refuse)
+        if instance.accept==True:
+            print('**********accept demand')
+            template= render_to_string('accepter.html')
+            titre="Votre Demande a été accepté"   
+        elif instance.refuse==True:
+            print('**********refuse demand')
+            template= render_to_string('refuser.html')
+            titre= "Votre Demande a été refusé"
+    else:
+        print('**********demand envoyé')
+        template= render_to_string('retourProd.html')
+        titre="Demande de Retour de Produit est envoyée avec succèe"
+    # text_content = strip_tags(template)
+
+    email =EmailMessage(
+    titre,
+    template,
+    settings.EMAIL_HOST_USER,
+    [mail],
+        
+        )    
+    email.fail_silently=False,
+    email.send()
 
 
 
@@ -76,23 +114,17 @@ def create_slug_field(instance,sender, **kwargs):
 @receiver(order_created)
 def on_order_created(sender, **kwargs):
     order=kwargs['order']
+    # if order.msg != "":
+    #     class OrderMsg(generics.RetrieveAPIView):
+    #         serializer_class = OrderMsgSerializer
+    #         def get_queryset(self):
+    #             return Order.objects.filter(order=order)
     print(order)
     capture_email= order.customer.user.email
     name= order.customer.user.username
     title= 'Merci bien Mr/Mme ' + name
     order_items=OrderItem.objects.filter(order=order)
     # product=[]
-    print('this print is in the handlers')
-    for item in order_items:
-        id=item.product_id
-        print(item.product.description)
-        print(item.product.store)
-        user=item.product.store_id
-        print(user)
-        order_count= Store.objects.filter(user_id=user)
-        print('***********************')
-        for item in order_count:
-            print(item)
         # order_count = order_count+1
 
 
@@ -103,17 +135,25 @@ def on_order_created(sender, **kwargs):
     # for item in order_items:
     #     Product.objects.filter(id=item.product)    
 
-    # qty management
-    for item in order_items:
-        product=item.product
-        prod_qty_updated=product.inventory - item.quantity
-        Product.objects.filter(id= product.id).update(inventory=prod_qty_updated)
+    # # qty management
+    # for item in order_items:
+    #     product=item.product
+    #     if product.inventory < item.quantity:
+    #         raise serializers.ValidationError('Désolé, vous pouvez acheter que ' + product.inventory+'!!!')
+    #     prod_qty_updated=product.inventory - item.quantity
+    #     Aprod.objects.filter(id= product.id).update(inventory=prod_qty_updated)
 
-        if prod_qty_updated==0:
-            print("this product is out of stock!!!!")
-            Product.objects.filter(id= product.id).update(is_active=False)
-        elif prod_qty_updated <3:
-            msg= "Attension!!! la quantité de votre produit " + str(item.product) + "devient inférieur à 3 pièces !!!"
+    #     if prod_qty_updated==0:
+    #         print("this product is out of stock!!!!")
+    #         Aprod.objects.filter(id= product.id).update(is_active=False)
+    #         if not Aprod.objects.filter(is_active=True).filter(product_id=product.product.id).exists():
+    #             Product.objects.filter(id=product.product_id).update(is_active=False)
+    #             msg="Votre vitrine " + str(item.product.product.title) + "est en rupture de stock!!!"
+    #             return msg
+    #         msg="Votre produit " +str(item.product.slug) + "est en rupture de stock!!!"
+    #         return msg
+    #     elif prod_qty_updated <3:
+    #         msg= "Attension!!! la quantité de votre produit " + str(item.product.slug) + "devient inférieur à 3 pièces !!!"
 
     template= render_to_string('index.html',{'order_items':order_items,'name':name})
     # text_content = strip_tags(template)

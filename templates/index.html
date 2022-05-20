@@ -7,10 +7,18 @@
     <title>Document</title>
 </head>
 <body>
+Commande N : order_items[0].order_id
+
+
 Merci d'avoir passé votre commande Mr/Mme <b>{{ name }}</b> 
 {% for item in order_items %}
 Votre {{ forloop.counter }} produit est:
-{{ item.product }} , son prix est : {{ item.product.unit_price }},     vous avez acheter {{ item.quantity }} {{ item.product }} .
+{{ item.product.product.title }} , son prix est : {{ item.product.product.unit_price }} Dinars ,     vous avez acheter {{ item.quantity }} {{ item.product.product.title }} .
+L'identifiant de ce produit est : {{ item.product.slug }}
 {% endfor %}
+
+
+
+
 </body>
 </html>

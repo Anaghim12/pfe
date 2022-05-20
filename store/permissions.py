@@ -1,5 +1,7 @@
+import pdb
 from rest_framework import permissions
-from store.models import Store
+from store.models import Order, Store
+from rest_framework import serializers
 class IsAminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
@@ -15,6 +17,7 @@ class VendeurOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in ('HEAD','OPTIONS'):
             return True
+        # raise serializers.ValidationError('V')
         return bool((request.user and request.user.type.role=='2')or(request.user.is_superuser==True))
 # permission accée que pour les vendeurs qui possédent ce store
 class VendeurOwnerStoreOrReadOnly(permissions.BasePermission):
@@ -30,13 +33,27 @@ class VendeurOwnerStoreOrReadOnly(permissions.BasePermission):
             return True
 
         # Instance must have an attribute named `owner`.
-        return (obj.user.id == request.user.id and request.user.type.id ==4)
+        return (obj.store_id == request.user.id and request.user.type.id ==4)
         # return  bool( obj.user_id==request.user.id)
 # si le client ne posséde pas de profil pour (afin de savoir ces données =>d'ou on peut livrer ce produit à ce client )
 # Rq: on veux un profil remplit d'une façon manuelle car un profil vide est crée d'une façon automatique
 class ClientOwnAProfile(permissions.BasePermission):
     def has_permission(self, request, view):
-        # if request.method in permissions.SAFE_METHODS:
-        #     return True
+        if request.method in permissions.SAFE_METHODS:
+            return True
         # return bool(request.user.type.role=='1' and request.user.customer.street != 'no street')
-        return bool( request.user.customer.street != 'no street')
+        return bool(request.user.type_id==1 and request.user.customer.street != 'no street')
+class Client(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        # return bool(request.user.type.role=='1' and request.user.customer.street != 'no street')
+        return bool(request.user.type_id==1 )
+class ClientOwnAnOrder(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        # return bool(request.user.type.role=='1' and request.user.customer.street != 'no street')
+        
+        user=request.user.id
+        return bool( request.user.type_id==1 and Order.objects.filter(customer=user).exists() )

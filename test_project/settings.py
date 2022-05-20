@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-5(5!b#c7rm1um1owf2(y%g*e#2s97gn&)ek2#4-^7%vg1@-8h+
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    '13a8-102-156-205-94.ngrok.io',
+    '0083-197-14-11-2.ngrok.io',
     '127.0.0.1',
     'localhost',
 ]
@@ -88,7 +88,7 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         #'DIRS': [os.path.join(BASE_DIR)],
         #'DIRS': [os.path.join(BASE_DIR),os.path.join(BASE_DIR,'build')],
-        'DIRS': [os.path.join(BASE_DIR,'build'),os.path.join(BASE_DIR)],
+        'DIRS': [os.path.join(BASE_DIR,'build'),os.path.join(BASE_DIR,'templates')],
 
         'APP_DIRS': True,
         'OPTIONS': {
@@ -185,6 +185,11 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': [
+    'rest_framework.permissions.AllowAny',
+    ],
+    #Controler les erreurs
+    # 'EXCEPTION_HANDLER': 'utils.exception_handler.custom_exception_handler',
     #this is for pagination
     # this is for filtering
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],

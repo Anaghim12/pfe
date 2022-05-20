@@ -68,19 +68,18 @@ urlpatterns =[
     path('products/search/',views.SearchProduct.as_view()),
     #manage productWishList
     path('wishprod/add',views.ProdWishListCreateViewSet.as_view()),
-    path('wishprod/',views.ProdWishListListViewSet.as_view()),
-    path('wishprod/<int:pk>',views.ProdWishListRetreiveViewSet.as_view()),
+    # path('wishprod/',views.ProdWishListListViewSet.as_view()),
+    path('wishprod/',views.ProdWishListRetreiveViewSet.as_view()),
     path('wishprod/destroy/<int:pk>',views.ProdWishListDestroyViewSet.as_view()),
     #manage productItemWishList
-    #path('wishprod/items/<pk>',views.ItemCartRetreiveViewSet.as_view()),
     path('wishprod/items/<pk>/destroy',views.ProdItemWishListDestroyViewSet.as_view()),
     path('wishprod/items/<pk>/update',views.ProdItemWishListUpdateViewSet.as_view()),
     path('wishprod/items/',views.ProdItemWishListListViewSet.as_view()),
     path('wishprod/items/add',views.ProdItemWishListCreateViewSet.as_view()),
     #manage storeWishList
     path('wishstore/add',views.StoreWishListCreateViewSet.as_view()),
-    path('wishstore/',views.StoreWishListListViewSet.as_view()),
-    path('wishstore/<int:pk>',views.StoreWishListRetreiveViewSet.as_view()),
+    # path('wishstore/',views.StoreWishListListViewSet.as_view()),
+    path('wishstore/',views.StoreWishListRetreiveViewSet.as_view()),
     path('wishstore/destroy/<int:pk>',views.StoreWishListDestroyViewSet.as_view()),
     #manage storeItemWishList
     path('wishstore/items/<pk>/destroy',views.StoreItemWishListDestroyViewSet.as_view()),
@@ -108,8 +107,15 @@ urlpatterns =[
     path('products/<int:product_pk>/aprod/<int:pk>',views.AprodRetreiveViewSet.as_view()),
     path('products/<int:product_pk>/aprod/',views.AprodListViewSet.as_view()),
     path('products/<int:product_pk>/aprod/destroy/<int:pk>',views.AprodDestroyViewSet.as_view()),
+    # demande retour produit
+    path('demande_retour_produit/',views.CreateDemandeRetour.as_view()),
+    #getsubcollection of the collection selected by user
+    path('get_subcollection_demanded',views.GetDemandedSubCollection),
 
-
+    path('products/<int:product_pk>/choix_produit',views.ChoixProduit.as_view()),
+    path('taille_choix_final_produit/',views.GetAprodIdBasedSize),
+    #recevoir notif pour gestion stock au vendeur
+    path('display_alerte/',views.DisplayAlerte.as_view())
 
 
 ]

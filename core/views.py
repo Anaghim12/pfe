@@ -6,7 +6,7 @@ from .models import User
 from django.shortcuts import render
 # from .serializers import UserCreateSerializer
 # Create your views here.
-#test front
+#test front ***********this is for register
 @api_view(['POST'])
 def EmailExists(request):
     try:
@@ -14,3 +14,10 @@ def EmailExists(request):
         return Response({'Message':'Cet email exist'},status=status.HTTP_400_BAD_REQUEST)
     except User.DoesNotExist:
         return Response({'Message':"Cet email n' existe pas !!"},status=status.HTTP_200_OK)
+@api_view(['POST'])
+def LogInValidation(request):
+    if User.objects.get(email=request.data['email']):
+        user=User.objects.get(email=request.data['email'])
+        if user.is_active==False:
+            return Response({'Message':"Votre compte n'est encore activé!!!"},status=status.HTTP_400_BAD_REQUEST)
+    return Response({'Message':"IL faut s'assurer de vos informations entrées!!"},status=status.HTTP_400_BAD_REQUEST)
