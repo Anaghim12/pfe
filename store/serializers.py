@@ -3,6 +3,8 @@ from audioop import reverse
 from dataclasses import fields
 import pdb
 from turtle import pd, title
+from core.models import User
+from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
 #pour convertir en decimal a number
@@ -23,7 +25,8 @@ class GetSizeSerializer(serializers.ModelSerializer):
     class Meta:
         model=Aprod
         fields=['id','size']
-
+class NewCreateOrderSerializer(serializers.Serializer):
+    new_data=models.JSONField()
 #Demanderetourserializer
 class DemandeRetourSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
@@ -32,7 +35,7 @@ class DemandeRetourSerializer(serializers.ModelSerializer):
         return DemandeRetour.objects.create(user =user , **validated_data)
     class Meta:
         model=DemandeRetour
-        fields =['id','num_order','date_order','slug_produit_retour','cause','image_facture','image_produit']
+        fields =['id','num_order','date_order','slug_produit_retour','cause']
 
 #Aprodserializer
 class AprodSerializer(serializers.ModelSerializer):
@@ -75,16 +78,20 @@ class ProductImageSerializer(serializers.ModelSerializer):
 class SimpleReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
-        fields =['date','description','name']
+        fields =['user_id','id','date','description','name']
 
 #productSerializer
+class detailproduct(serializers.ModelSerializer):
+    class Meta:
+        model= Aprod
+        fields=['id','color','size']
 class RetreiveProductSerializer(serializers.ModelSerializer):
     images =ProductImageSerializer(many=True, read_only=True) 
     reviews = SimpleReviewSerializer(many=True, read_only=True)
-    ProdVersion =GetSizeSerializer(many=True,read_only=True)
+    a_prod= detailproduct(many=True, read_only=True)
     class Meta:
         model =Product
-        fields =['id','title','get_absolute_url','unit_price','price_with_promotion','promotion','collection','material','sub_collection','description','ProdVersion','images','reviews']
+        fields =['id','title','get_absolute_url','unit_price','price_with_promotion','promotion','collection','material','sub_collection','description','images','reviews','store', "a_prod"]
 class ProductSerializer(serializers.ModelSerializer):
     images =ProductImageSerializer(many=True, read_only=True) 
     def create(self, validated_data):
@@ -105,7 +112,7 @@ class ProductSerializer(serializers.ModelSerializer):
     reviews = SimpleReviewSerializer(many=True, read_only=True)
     class Meta:
         model =Product
-        fields =['id','title','get_absolute_url','unit_price','store_price','promotion','collection','material','sub_collection','price_with_tax','description','images','reviews']
+        fields =['id','title','get_absolute_url','unit_price','store_price','promotion','collection','material','sub_collection','price_with_tax','description','images','reviews','store']
 
     # id = serializers.IntegerField()
     # title = serializers.CharField(max_length=255)
@@ -138,9 +145,10 @@ class UpdateCustomerSerializer(serializers.ModelSerializer):
 #product simple object (pour minimiser les fields)
     
 class SimpleProductSerializer(serializers.ModelSerializer):
+    images =ProductImageSerializer(many=True, read_only=True) 
     class Meta: 
         model = Product
-        fields =['id','title','unit_price','price_with_promotion']
+        fields =['id','title','unit_price','price_with_promotion','images']
 class SimpleAprodSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source='product.title',read_only=True)
     unit_price = serializers.CharField(source='product.price_with_promotion',read_only=True)
@@ -206,7 +214,7 @@ class prodItemWishListSerializer(serializers.ModelSerializer):
     products  = SimpleProductSerializer()
     class Meta:
         model = ProdItemWishList
-        fields =['user','id','products','note']
+        fields =['user','id','products']
 class ProdWishListSerializer(serializers.ModelSerializer):
     prod_item_wish = prodItemWishListSerializer(many=True,read_only = True)
     class Meta:
@@ -227,7 +235,7 @@ class AddprodItemWishListSerializer(serializers.ModelSerializer):
     products_id =serializers.IntegerField()
     class Meta:
         model = ProdItemWishList
-        fields = ['products_id','note']
+        fields = ['products_id']
 class UpdateprodItemWishListSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['user']
@@ -235,7 +243,7 @@ class UpdateprodItemWishListSerializer(serializers.ModelSerializer):
     products_id =serializers.IntegerField()
     class Meta:
         model = ProdItemWishList
-        fields = ['products_id','note']
+        fields = ['products_id']
 #store wish list
 class SimpleStoreSerializer(serializers.ModelSerializer):
     class Meta:
@@ -279,7 +287,7 @@ class UpdateStoreItemWishListSerializer(serializers.ModelSerializer):
 class SimpleStoreReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = StoreReview
-        fields =['date','description','name']
+        fields =['user_id','id','date','description','name']
 
 class StoreSerializer(serializers.ModelSerializer):
     # user: serializers.IntegerField()
@@ -446,30 +454,36 @@ class SlideSerializer(serializers.ModelSerializer):
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
-        fields =['id','date','description','name','product']
+        fields =['user_id','id','date','description','note','name','product']
 
 class CreateReviewSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         name = self.context['name']
+        user_obj =User.objects.get(email=name)
+        print(user_obj)
+        name=user_obj.first_name
         product_id =self.context['product_id']
         return Review.objects.create(product_id =product_id,name=name,**validated_data)
     class Meta:
         model = Review
-        fields =['id','date','description']
+        fields =['user_id','id','date','note','description']
 #ReviewSerializer
 class StoreReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = StoreReview
-        fields =['id','date','description','name','store']
+        fields =['user_id','id','date','description','note','name','store']
 
 class CreateStoreReviewSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         name = self.context['name']
+        user_obj =User.objects.get(email=name)
+        # print(user_obj)
+        name=user_obj.first_name
         store_id =self.context['store_id']
         return StoreReview.objects.create(store_id =store_id,name=name,**validated_data)
     class Meta:
         model = StoreReview
-        fields =['id','date','description']
+        fields =['user_id','id','date','note','description']
 
 #collectionSerializer
 

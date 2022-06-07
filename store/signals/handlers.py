@@ -31,8 +31,8 @@ def create_customer_for_new_user(sender, **kwargs):
         store_name=user.first_name +' ' + user.last_name +' Boutique'
         if user.type_id ==4 :
             Store.objects.create(user=kwargs['instance'],store_name=store_name)
-            print(user.store)
-            print(user.store.store_name)
+            # print(user.store)
+            # print(user.store.store_name)
             Customer.objects.create(user=user)
 
 # on va automatiser la création d'un profil (mais en cas de passage d'un ordre par un client on doit protéger le route:orders/add  fil views.py pour oblier le client de terminer à remplir son profil avant de faire passer une commande  )
@@ -45,8 +45,8 @@ def create_customer_for_new_user(sender, **kwargs):
         if user.type_id == 3:
             ProdWishList.objects.create(user=user)
             StoreWishList.objects.create(user=user)
-            id = uuid4()
-            Cart.objects.create(id=id)
+            # id = uuid4()
+            # Cart.objects.create(id=id)
             Customer.objects.create(user=user)
 #affichage the right product
 @receiver(post_save,sender=Aprod)
@@ -78,12 +78,12 @@ def create_slug_field(instance,sender, **kwargs):
 #demande de retourd produit est créer
 @receiver(post_save,sender=DemandeRetour)
 def create_demande_retour_prod(sender,instance, **kwargs):
-    print('AVANT CONDITION')
-    print(kwargs)
+    # print('AVANT CONDITION')
+    # print(kwargs)
     mail=instance.user
     if kwargs['created']==False:
-        print(instance.accept)
-        print(instance.refuse)
+        # print(instance.accept)
+        # print(instance.refuse)
         if instance.accept==True:
             print('**********accept demand')
             template= render_to_string('accepter.html')
@@ -120,6 +120,22 @@ def on_order_created(sender, **kwargs):
     #         def get_queryset(self):
     #             return Order.objects.filter(order=order)
     print(order)
+    order_items = OrderItem.objects.filter(order=order)
+    for item in order_items:
+        product=item.product   
+        prod_qty_updated=product.inventory - item.quantity        
+        print(prod_qty_updated)
+        Aprod.objects.filter(id= product.id).update(inventory=prod_qty_updated)
+        store=item.product.product.store
+        order_count= store.order_count + 1
+        if order_count<5000:
+            membership = "B"
+        elif 5000<order_count<200000:
+            membership ="S"
+        else: 
+            membership="G"
+        Store.objects.filter(user= store.user).update(order_count=order_count,membership=membership)
+        
     capture_email= order.customer.user.email
     name= order.customer.user.username
     title= 'Merci bien Mr/Mme ' + name

@@ -189,7 +189,7 @@ class Store(models.Model):
         ordering=['store_name']
 class StoreImage(models.Model):
     #brand_image = models.ImageField(upload_to='store/brand')
-    store_image = models.ImageField(upload_to='store/storee')
+    store_image = models.ImageField(upload_to='store/storee',default='store/storee/2.jpeg')
     store = models.ForeignKey(Store, on_delete=models.CASCADE,related_name='StoreImage')
 class Order(models.Model):
     PAYMENT_STATUS_PENDING = 'P'
@@ -218,8 +218,6 @@ class DemandeRetour(models.Model):
     date_order = models.DateField()
     slug_produit_retour = models.CharField(max_length=255)
     cause = models.TextField(blank=False,null=False)
-    image_facture = models.ImageField(upload_to='store/prod_retour')
-    image_produit = models.ImageField(upload_to='store/prod_retour',null=True,blank=True)
     accept= models.BooleanField(default=False)
     refuse=models.BooleanField(default=False)
     placed_at = models.DateTimeField(auto_now_add=True)
@@ -255,6 +253,7 @@ class Slide(models.Model):
     slide_image = models.ImageField(upload_to='store/slide')
 
 class Review(models.Model):
+    user_id=models.BigIntegerField(default=0)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
     name = models.CharField(max_length=255)
     note = models.SmallIntegerField(default=1, validators=[MinValueValidator(1)] )    
@@ -262,6 +261,7 @@ class Review(models.Model):
     date = models.DateField(auto_now_add=True)
 
 class StoreReview(models.Model):
+    user_id=models.BigIntegerField(default=0)
     store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='reviews')
     name = models.CharField(max_length=255)
     note = models.SmallIntegerField(default=1, validators=[MinValueValidator(1)] )    

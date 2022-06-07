@@ -115,7 +115,8 @@ urlpatterns =[
     path('products/<int:product_pk>/choix_produit',views.ChoixProduit.as_view()),
     path('taille_choix_final_produit/',views.GetAprodIdBasedSize),
     #recevoir notif pour gestion stock au vendeur
-    path('display_alerte/',views.DisplayAlerte.as_view())
+    path('display_alerte/',views.DisplayAlerte.as_view()),
 
+    path('new_order_created/',views.new_create_order)
 
 ]

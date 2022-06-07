@@ -11,6 +11,7 @@ from .permissions import *
 from .models import *
 from .serializers import *
 from .pagination import *
+from .signals import order_created 
 from django.shortcuts import get_object_or_404
 # this is for using class-based views
 from rest_framework import generics
@@ -71,6 +72,73 @@ class ChoixProduit(generics.ListAPIView):
     def get_queryset(self):
         return Aprod.objects.filter(product_id= self.kwargs['product_pk'])
 
+# {
+# "new_order":
+# [{"id":1,"qty":4,"unit_price":12}]
+
+# }
+# ClientOwnAProfile
+@permission_classes([IsAuthenticated])
+@api_view(['POST'])
+def new_create_order(request):
+    # print (request.data)
+    new_order=request.data['new_order']
+    # print(new_order)
+    serializer = NewCreateOrderSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user_id=request.user.id
+    customer=Customer.objects.get(user_id=user_id)
+    order = Order.objects.create(customer=customer)
+    # print(new_order)
+    # print(new_order[0]['id'])
+    # print(order)
+    for item in new_order:
+        # print(item)
+        # print(item['id'])
+        OrderItem.objects.create(order=order,product_id=item['id'],unit_price=item['unit_price'],quantity=item['qty'])
+    order_count=customer.order_count +1
+    if order_count<500:
+        membership="B"
+    elif 500<order_count<1000:
+        membership="S"
+    else:
+        membership="G"        
+    Customer.objects.filter(user=customer.user).update(order_count=order_count,membership=membership)
+    order_created.send_robust(order.__class__,order=order)
+    # order_items = OrderItem.objects.filter(order=order)
+    # for item in order_items:
+    #     product=item.product   
+    #     prod_qty_updated=product.inventory - item.quantity        
+    #     print(prod_qty_updated)
+    #     Aprod.objects.filter(id= product.id).update(inventory=prod_qty_updated)
+    #     store=item.product.product.store
+    #     order_count= store.order_count + 1
+    #     if order_count<5000:
+    #         membership = "B"
+    #     elif 5000<order_count<200000:
+    #         membership ="S"
+    #     else: 
+    #         membership="G"
+    #     Store.objects.filter(user= store.user).update(order_count=order_count,membership=membership)
+
+        # for item in new_order:
+            # pass
+        # print(item.id)
+        # print(item.qty)
+        # print(item.unit_price)
+    # order_items =[
+    # OrderItem(
+    #     order=order,
+    #     product = item.product,
+    #     unit_price=item.product.product.price_with_promotion,
+    #     quantity= item.quantity,
+    #     msg=item.msg,
+    #     store=item.store
+    #     )for item in new_order
+    # ]    
+    # print(serializer.validated_data)
+    # print(serializer.data)
+    return Response(serializer.data)
 @api_view(['POST'])
 def GetAprodIdBasedSize(request):
     product_id=request.data['product_id']
@@ -176,9 +244,6 @@ class StoreCreate(generics.CreateAPIView):
 class StoreList(generics.ListAPIView):
     queryset=Store.objects.prefetch_related('StoreImage').all()
     serializer_class =StoreSerializer
-    
-
-
     pagination_class =DefaultPagination
 class StoreRetreive(generics.RetrieveAPIView):
     queryset=Store.objects.prefetch_related('StoreImage').all()
@@ -361,6 +426,9 @@ class ReviewCreateViewSet(generics.CreateAPIView):
 class ReviewListViewSet(generics.ListAPIView):
     serializer_class = ReviewSerializer
     queryset = Review.objects.all()
+    # def get_queryset(self):
+    #     return Review.objects.filter(product_id= self.kwargs['product_pk'])
+
 
 class ReviewUpdateViewSet(generics.UpdateAPIView):
     serializer_class = CreateReviewSerializer
@@ -400,6 +468,8 @@ class StoreCreateViewSet(generics.CreateAPIView):
 class StoreListViewSet(generics.ListAPIView):
     serializer_class = StoreReviewSerializer
     queryset = StoreReview.objects.all()
+    # def get_queryset(self):
+    #     return StoreReview.objects.filter(store_id= self.kwargs['product_pk'])
 
 class StoreUpdateViewSet(generics.UpdateAPIView):
     serializer_class = CreateStoreReviewSerializer
@@ -591,12 +661,12 @@ class ProductList(generics.ListAPIView):
     serializer_class =ProductSerializer
     filter_backends  =[DjangoFilterBackend,SearchFilter,OrderingFilter]
     filterset_class = ProductFilter
-    # pagination_class = DefaultPagination
+    pagination_class = DefaultPagination
     #search_fields = ['title','description']
     ordering_fields =['unit_price']
     pagination_class =DefaultPagination
 class ProductRetreive(generics.RetrieveAPIView):
-    queryset=Product.objects.prefetch_related('images').prefetch_related('reviews').all()
+    queryset=Product.objects.prefetch_related('images').prefetch_related('reviews').prefetch_related('a_prod').all()
     serializer_class =RetreiveProductSerializer
 class ProductUpdate(generics.UpdateAPIView):
     queryset=Product.objects.all()
@@ -636,7 +706,7 @@ class SubCollectionRetreive(generics.ListAPIView):
     ordering_fields =['unit_price']
     def get_queryset(self):
         print(self.kwargs['pk'])
-        return Product.objects.filter(sub_collection_id= self.kwargs['pk']).filter(sub_collection__is_active=True)
+        return Product.objects.filter(sub_collection_id= self.kwargs['pk']).filter(sub_collection__is_active=True).prefetch_related('images')
         # results= SubCollection.objects.filter(is_active=True)
         # return results
         

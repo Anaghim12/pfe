@@ -21,7 +21,7 @@ class ProductAdmin(admin.ModelAdmin):
     #     'slug': ['title']
     # }
     #this a custom action we added
-    actions = ['clear_inventory']
+    # actions = ['clear_inventory']
     list_display = ['title', 'unit_price',
                     'store','is_active']
     list_editable = ['unit_price']
@@ -59,7 +59,7 @@ class ProdWishListAdmin(admin.ModelAdmin):
     list_display = ['username','created_at']
     autocomplete_fields = ['user']
     list_select_related =['user']
-    search_fields = ['user']
+    search_fields = ['user__username']
     ordering=['created_at']
     # def user_first_name(self, ProdWishList):
     #     return ProdWishList.user.first_name
@@ -69,8 +69,8 @@ class ProdItemWishListAdmin(admin.ModelAdmin):
     list_display = ['username','products','note']
     autocomplete_fields = ['user','products']
     list_select_related =['user']
-    search_fields = ['user']
-    list_filter=['products__title','note']
+    search_fields = ['user__user__username']
+    list_filter=['note']
 
 # store wishlist
 @admin.register(models.StoreWishList)
@@ -78,7 +78,7 @@ class StoreWishListAdmin(admin.ModelAdmin):
     list_display = ['username','created_at']
     autocomplete_fields = ['user']
     list_select_related =['user']
-    search_fields = ['user']
+    search_fields = ['user__username']
 
 
 @admin.register(models.StoreItemWishList)
@@ -110,8 +110,8 @@ class InventoryFilter(admin.SimpleListFilter):
 @admin.register(models.Aprod)
 class AprodAdmin(admin.ModelAdmin):
     list_display = ['slug','inventory','product']
-    list_filter = ['product__title','size',InventoryFilter]
-    search_fields = ['slug']
+    list_filter = ['size',InventoryFilter]
+    search_fields = ['slug','product__title']
     
 
 @admin.register(models.Collection)
@@ -126,17 +126,17 @@ class CollectionAdmin(admin.ModelAdmin):
 class SlideAdmin(admin.ModelAdmin):
     list_display = ['id','slide_image']
     search_fields = ['id','slide_image']
+@admin.register(models.StoreImage)
+class StoreImageAdmin(admin.ModelAdmin):
+    list_display = ['id','store_image']
+    search_fields = ['id','store_image']
 
 @admin.register(models.Store)
 class StoreAdmin(admin.ModelAdmin):
     list_display = ['store_name','user','order_count','membership']
     search_fields = ['store_name']
     list_filter=['membership']
-@admin.register(models.Cart)
-class CartAdmin(admin.ModelAdmin):
-    list_display = ['id','created_at']
-    search_fields = ['id']
-    list_filter = ['created_at']
+
 #orders
 class OrderItemInline(admin.TabularInline):
     autocomplete_fields = ['product']
@@ -151,22 +151,18 @@ class OrderAdmin(admin.ModelAdmin):
     autocomplete_fields = ['customer']
     #inlines = [OrderItemInline]
     list_display = ['id', 'placed_at', 'customer']
-    ordering=['placed_at']
+    ordering=['-placed_at']
     # list_filter=['customer__user__username']
 
 @admin.register(models.OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ['id','order','product','quantity','unit_price']
+    list_display = ['id','order','product','quantity']
 
 @admin.register(models.DemandeRetour)
 class DemandeRetourAdmin(admin.ModelAdmin):
-    list_display = ['placed_at','num_order','user','date_order','accept','refuse']
+    list_display = ['placed_at','user','date_order','accept','refuse']
     list_filter=['accept','refuse']
     ordering=['placed_at']
-@admin.register(models.CartItem)
-class CartItemAdmin(admin.ModelAdmin):
-    list_display = ['cart','quantity']
-    list_filter = ['cart__id']
 @admin.register(models.ProductImage)
 class ProductImageAdmin(admin.ModelAdmin):
     list_display = ['image']
@@ -179,7 +175,7 @@ class CustomerAdmin(admin.ModelAdmin):
     # auth : customer profile
     list_select_related =['user']
     ordering = ['user__first_name', 'user__last_name']
-    search_fields = ['first_name__istartswith', 'last_name__istartswith']
+    search_fields = ['user__first_name', 'user__last_name']
 
    
     def get_queryset(self, request):
@@ -190,14 +186,16 @@ class CustomerAdmin(admin.ModelAdmin):
 @admin.register(models.Review)
 class ReviewAdmin(admin.ModelAdmin):
     list_display = ['product','name','description','date']
-    list_filter = ['name', 'note','product__title']
+    search_fields =['product__title']
+    list_filter =['note']
     ordering = ['date']
 
 #store Reviews
 @admin.register(models.StoreReview)
 class StoreReviewAdmin(admin.ModelAdmin):
     list_display = ['store','description','date']
-    list_filter = ['name', 'note','store__store_name']
+    search_fields =['name', 'store__store_name']
+    list_filter =['note']
     ordering = ['date']
 #store Reviews
 @admin.register(models.SubCollection)
